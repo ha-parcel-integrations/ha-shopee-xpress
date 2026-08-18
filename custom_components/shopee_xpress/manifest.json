@@ -1,0 +1,15 @@
+{
+  "domain": "shopee_xpress",
+  "name": "Shopee Xpress",
+  "codeowners": [
+    "@peternijssen"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/ha-parcel-integrations/ha-shopee-xpress",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/ha-parcel-integrations/ha-shopee-xpress/issues",
+  "quality_scale": "silver",
+  "requirements": [],
+  "version": "0.1.0"
+}

@@ -1,0 +1,27 @@
+track_parcel:
+  fields:
+    tracking_code:
+      required: true
+      example: "SPXID000000000000"
+      selector:
+        text:
+    market:
+      required: false
+      example: "ID"
+      selector:
+        select:
+          options:
+            - "BR"
+            - "ID"
+            - "MY"
+            - "PH"
+            - "TH"
+            - "VN"
+
+untrack_parcel:
+  fields:
+    tracking_code:
+      required: true
+      example: "SPXID000000000000"
+      selector:
+        text:
