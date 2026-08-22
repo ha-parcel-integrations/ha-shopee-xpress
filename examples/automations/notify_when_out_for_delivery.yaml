@@ -16,10 +16,10 @@ conditions:
 actions:
   - action: notify.mobile_app
     data:
-      title: "Shopee Xpress onderweg"
+      title: "Shopee Xpress on the way"
       message: >-
         {{ trigger.event.data.sender or trigger.event.data.barcode }}
-        wordt vandaag bezorgd.
+        is being delivered today.
       # No clickAction: this carrier's payload never carries a tracking URL
       # in any market (unlike most carriers in this suite), so `data.url`
       # is always None — add one back if that ever changes.

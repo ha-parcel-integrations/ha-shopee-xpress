@@ -39,7 +39,7 @@ you act in one of these areas:
 written and green.** The payload mapping was built from maintainer-supplied
 captures plus one live re-probe made from the research repo, then confirmed
 against real parcels through this integration itself — see
-`carrier-research/api/shopee-xpress/`. `tests/payloads.py` reproduces the six
+`carrier-research/shopee-xpress/api/`. `tests/payloads.py` reproduces the six
 real (redacted) captures faithfully — same tracking-code shapes, same
 milestone/tracking codes, same record counts and duplicate-code positions
 (`F004` ×3 in the Brazilian fixture, `F440`/sorting-centre pairs in Malaysia
@@ -193,7 +193,7 @@ debug-level log, gone. If block-set questions need revisiting later, the
 per-market pattern table in `tracking.md` is still the place to look, not a
 runtime warning.
 
-**API mechanics live in `carrier-research/api/shopee-xpress/`, NOT here and
+**API mechanics live in `carrier-research/shopee-xpress/api/`, NOT here and
 not in a local `docs/api/`** — the endpoint, the `MARKETS` host/language
 table, the `milestone_code`/reason-code vocabularies and their `ParcelStatus`
 mapping, and the full annotated captures. See CONVENTIONS.md.
@@ -245,5 +245,5 @@ python -m pytest tests/ --cov=custom_components.shopee_xpress
 Coverage must stay **above 95%** (silver `test-coverage` rule) — currently
 100%, 175 tests. Run before committing. A code change updates the README +
 this file + `docs/` in the same commit; the API reference lives in this
-carrier's directory under the private `carrier-research/api/`, never in this
-repo.
+carrier's own directory under the private `carrier-research/shopee-xpress/api/`,
+never in this repo.
