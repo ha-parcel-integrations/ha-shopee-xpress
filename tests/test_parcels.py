@@ -26,6 +26,7 @@ from custom_components.shopee_xpress.parcels import (
     REQUESTED_CODE_KEY,
     _describe_status_text,
     _epoch_seconds_to_iso,
+    _tracking_url,
     apply_delivered_filter,
     build_history,
     map_parcel_status,
@@ -160,6 +161,19 @@ def test_epoch_seconds_to_iso_warns_on_non_numeric_value(caplog):
     caplog.set_level(logging.WARNING)
     assert _epoch_seconds_to_iso("not-a-number", field="actual_time") is None
     assert "plausible epoch" in caplog.text
+
+
+# ---------------------------------------------------------------------------
+# _tracking_url
+# ---------------------------------------------------------------------------
+
+
+def test_tracking_url_builds_per_market_deep_link():
+    assert _tracking_url("VN", "SPXVN00000000000C") == "https://spx.vn/track?SPXVN00000000000C"
+
+
+def test_tracking_url_none_without_a_tracking_code():
+    assert _tracking_url("MY", None) is None
 
 
 # ---------------------------------------------------------------------------
@@ -390,7 +404,7 @@ def test_normalize_malaysia_delivered():
     assert parcel["weight"] is None
     assert parcel["dimensions"] is None
     assert parcel["pickup_point"] is None
-    assert parcel["url"] is None
+    assert parcel["url"] == "https://spx.com.my/track?MY000000000000"
     assert parcel["sender"] is None
     assert parcel["raw"]["resolved_number"] == MY_CODE
     assert parcel["raw"]["resolved_number_is_internal"] is False

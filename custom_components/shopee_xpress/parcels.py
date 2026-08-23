@@ -47,6 +47,8 @@ from .const import (
     KNOWN_STANDARD_REASON_CODES,
     KNOWN_SUBGROUP_NAMES,
     KNOWN_TRACKING_CODES,
+    MARKETS,
+    TRACKING_URL,
     ParcelStatus,
 )
 
@@ -420,6 +422,18 @@ def build_history(
     return ordered[-max_events:]
 
 
+def _tracking_url(market: str, tracking_code: str | None) -> str | None:
+    """Construct the consumer tracking deep-link for a parcel.
+
+    Same host as the API host for ``market``, a different path — see
+    :data:`~.const.TRACKING_URL`.
+    """
+    if not tracking_code:
+        return None
+    host, _language_code = MARKETS[market]
+    return TRACKING_URL.format(host=host, tracking_code=tracking_code)
+
+
 def normalize_parcel(
     raw: dict[str, Any], *, market: str, include_history: bool = False
 ) -> dict:
@@ -482,7 +496,7 @@ def normalize_parcel(
         "planned_to": planned_to,
         "pickup": status is ParcelStatus.AT_PICKUP_POINT,
         "pickup_point": None,
-        "url": None,
+        "url": _tracking_url(market, barcode),
         "weight": None,
         "dimensions": None,
         "history": build_history(records) if include_history else None,

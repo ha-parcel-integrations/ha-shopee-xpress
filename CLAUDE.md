@@ -193,6 +193,17 @@ debug-level log, gone. If block-set questions need revisiting later, the
 per-market pattern table in `tracking.md` is still the place to look, not a
 runtime warning.
 
+**`url` is constructed, not read from the payload — no API response in any
+market carries one.** `const.py`'s `TRACKING_URL` template
+(`https://{host}/track?{tracking_code}`) reuses each market's API host with a
+different, client-rendered path; `parcels.py`'s `_tracking_url()` fills it in
+with the same `barcode` value the parcel already carries. The pattern came
+from the maintainer's own device use across all six markets, not a capture —
+a probe from this repo could only confirm the domain serves an app at that
+path (a bogus code and a nonexistent path both `200` with an identical SPA
+shell), not that the content is correct for a given code. `CAPABILITIES`
+gained `url` in the same change (1.1.0).
+
 **API mechanics live in `carrier-research/shopee-xpress/api/`, NOT here and
 not in a local `docs/api/`** — the endpoint, the `MARKETS` host/language
 table, the `milestone_code`/reason-code vocabularies and their `ParcelStatus`

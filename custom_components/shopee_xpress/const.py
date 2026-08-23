@@ -35,13 +35,15 @@ KNOWN_CAPABILITIES = frozenset(
     {"weight", "dimensions", "delivery_window", "pickup_point", "url", "history"}
 )
 
-# What Shopee Xpress actually populates. weight/dimensions/pickup_point/url are
+# What Shopee Xpress actually populates. weight/dimensions/pickup_point are
 # never present in any market's payload (confirmed across six markets) — do not
 # add them back without a capture that shows otherwise. delivery_window is
 # populated in three of six markets and absent (never `None`-vs-error, just
 # structurally missing) in the other three, but "populated in some markets" is
 # what CAPABILITIES tracks. history is always buildable from the event list.
-CAPABILITIES = frozenset({"delivery_window", "history"})
+# url is never in the payload either, but — unlike those — is constructed
+# rather than read: see TRACKING_URL below.
+CAPABILITIES = frozenset({"delivery_window", "history", "url"})
 
 # One JSON GET, no auth, keyed on a query parameter that resolves against
 # several identifier namespaces at once (see MARKETS and the tracking-code
@@ -50,6 +52,15 @@ TRACKING_API_URL = (
     "https://{host}/shipment/order/open/order/get_order_info"
     "?spx_tn={tracking_code}&language_code={language_code}"
 )
+
+# Consumer tracking deep-link, used to populate the parcel's ``url`` field.
+# Same host as the API, a different, client-rendered path — the maintainer
+# confirmed the pattern from their own device across all six markets. The
+# page is a SPA that serves an identical shell for any path (confirmed by
+# probe: a bogus code and a nonexistent path both 200 with the same HTML), so
+# unlike the API this cannot be control-tested for content from the backend
+# side — only that the domain serves the app at this path.
+TRACKING_URL = "https://{host}/track?{tracking_code}"
 
 # The hub's chosen market. One config entry = one market: the lookup only
 # resolves against the host it was made to, and the failure mode when it

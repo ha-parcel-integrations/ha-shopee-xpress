@@ -126,7 +126,7 @@ Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress
 | `sensor.shopee_xpress_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.shopee_xpress_last_successful_update` | Diagnostic: when Shopee Xpress was last polled successfully |
 
-A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions`, `pickup_point` and a tracking URL are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand), and disappears once a parcel is delivered.
+A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
 
 ## Parcel status reference
 
