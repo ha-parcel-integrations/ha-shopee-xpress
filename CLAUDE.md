@@ -209,6 +209,17 @@ not in a local `docs/api/`** — the endpoint, the `MARKETS` host/language
 table, the `milestone_code`/reason-code vocabularies and their `ParcelStatus`
 mapping, and the full annotated captures. See CONVENTIONS.md.
 
+**Translations cover four of the six supported markets, not all six — `my`
+and `ph` are skipped on purpose.** CONVENTIONS.md's rule is one translation
+per country-picker option, and `pt-BR`/`id`/`th`/`vi` (Brazil, Indonesia,
+Thailand, Vietnam) follow it (1.2.0). Malaysia and the Philippines don't:
+Home Assistant's own frontend has no Malay or Filipino/Tagalog interface
+language at all (confirmed against `translationMetadata.json` in
+`home-assistant/frontend`), so a `ms.json`/`tl.json` file could never be
+selected by any HA user — English already covers both markets in practice.
+Re-check that upstream list before adding either file; don't assume the gap
+is permanent.
+
 ## Options and reloads
 
 The options flow is one sectioned form (`data_entry_flow.section`); changes apply

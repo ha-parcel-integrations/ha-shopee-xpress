@@ -1,0 +1,139 @@
+{
+  "title": "Shopee Xpress",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Configurar o Shopee Xpress",
+        "description": "O Shopee Xpress opera um serviço separado por mercado — um código de rastreio de um mercado não funciona em outro. Escolha o mercado para o qual este hub é destinado; adicione outro hub depois para um segundo mercado. Você adicionará os pacotes após a configuração.",
+        "data": {
+          "market": "Mercado"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opções do Shopee Xpress",
+        "sections": {
+          "parcels": {
+            "name": "Pacotes",
+            "data": {
+              "add": "Adicionar um pacote",
+              "remove": "Remover pacotes"
+            },
+            "data_description": {
+              "add": "Insira um código de rastreio para o mercado deste hub. Você o encontra na página do pedido da Shopee ou na confirmação de envio."
+            }
+          },
+          "delivered": {
+            "name": "Pacotes entregues",
+            "data": {
+              "delivered_filter_type": "Filtrar por",
+              "delivered_filter_amount": "Quantidade"
+            },
+            "data_description": {
+              "delivered_filter_type": "Mostrar pacotes entregues dos últimos X dias, ou limitar aos X mais recentes.",
+              "delivered_filter_amount": "Número de dias ou pacotes a mostrar."
+            }
+          },
+          "history": {
+            "name": "Histórico de pacotes",
+            "data": {
+              "include_history": "Incluir histórico de status"
+            },
+            "data_description": {
+              "include_history": "Adiciona um atributo de histórico por pacote listando cada atualização de status (data/hora, status, texto original). Desativado por padrão."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "already_tracked": "Esse pacote já está sendo rastreado."
+    }
+  },
+  "selector": {
+    "market": {
+      "options": {
+        "br": "Brasil",
+        "id": "Indonésia",
+        "my": "Malásia",
+        "ph": "Filipinas",
+        "th": "Tailândia",
+        "vn": "Vietnã"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Dias",
+        "parcels": "Número de pacotes"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Rastrear pacote",
+      "description": "Começar a rastrear um pacote pelo código de rastreio do Shopee Xpress.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreio",
+          "description": "O código de rastreio do Shopee Xpress."
+        },
+        "market": {
+          "name": "Mercado",
+          "description": "A qual hub de mercado adicioná-lo. Necessário apenas quando há mais de um hub configurado."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Parar de rastrear pacote",
+      "description": "Parar de rastrear um pacote pelo código de rastreio do Shopee Xpress.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreio",
+          "description": "O código de rastreio do Shopee Xpress para parar de rastrear."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Um pacote foi registrado",
+      "parcel_status_changed": "O status de um pacote foi alterado",
+      "parcel_delivered": "Um pacote foi entregue",
+      "parcel_delivery_time_changed": "O horário de entrega previsto de um pacote foi alterado"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Atualizar"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Entregas"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Pacotes a caminho",
+        "unit_of_measurement": "pacotes"
+      },
+      "next_delivery": {
+        "name": "Próxima entrega"
+      },
+      "delivered_parcels": {
+        "name": "Pacotes entregues",
+        "unit_of_measurement": "pacotes"
+      },
+      "last_update": {
+        "name": "Última atualização bem-sucedida"
+      },
+      "parcel": {
+        "name": "Pacote {barcode}"
+      }
+    }
+  }
+}

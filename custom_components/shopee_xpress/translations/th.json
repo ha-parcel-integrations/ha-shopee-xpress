@@ -1,0 +1,139 @@
+{
+  "title": "Shopee Xpress",
+  "config": {
+    "step": {
+      "user": {
+        "title": "ตั้งค่า Shopee Xpress",
+        "description": "Shopee Xpress ให้บริการแยกกันในแต่ละตลาด — รหัสพัสดุจากตลาดหนึ่งจะใช้ไม่ได้กับอีกตลาดหนึ่ง เลือกตลาดที่ฮับนี้ใช้งาน แล้วเพิ่มฮับใหม่ภายหลังสำหรับตลาดที่สอง คุณจะเพิ่มพัสดุได้หลังจากตั้งค่าเสร็จ",
+        "data": {
+          "market": "ตลาด"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "ตัวเลือก Shopee Xpress",
+        "sections": {
+          "parcels": {
+            "name": "พัสดุ",
+            "data": {
+              "add": "เพิ่มพัสดุ",
+              "remove": "ลบพัสดุ"
+            },
+            "data_description": {
+              "add": "ป้อนรหัสพัสดุสำหรับตลาดของฮับนี้ คุณสามารถดูได้จากหน้าคำสั่งซื้อของ Shopee หรืออีเมลยืนยันการจัดส่ง"
+            }
+          },
+          "delivered": {
+            "name": "พัสดุที่จัดส่งแล้ว",
+            "data": {
+              "delivered_filter_type": "กรองตาม",
+              "delivered_filter_amount": "จำนวน"
+            },
+            "data_description": {
+              "delivered_filter_type": "แสดงพัสดุที่จัดส่งแล้วในช่วง X วันที่ผ่านมา หรือจำกัดไว้ที่ X รายการล่าสุด",
+              "delivered_filter_amount": "จำนวนวันหรือจำนวนพัสดุที่จะแสดง"
+            }
+          },
+          "history": {
+            "name": "ประวัติพัสดุ",
+            "data": {
+              "include_history": "รวมประวัติสถานะ"
+            },
+            "data_description": {
+              "include_history": "เพิ่มแอตทริบิวต์ประวัติของแต่ละพัสดุ ซึ่งแสดงรายการการอัปเดตสถานะแต่ละครั้ง (เวลา สถานะ ข้อความต้นฉบับ) ปิดใช้งานตามค่าเริ่มต้น"
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "already_tracked": "พัสดุนี้ถูกติดตามอยู่แล้ว"
+    }
+  },
+  "selector": {
+    "market": {
+      "options": {
+        "br": "บราซิล",
+        "id": "อินโดนีเซีย",
+        "my": "มาเลเซีย",
+        "ph": "ฟิลิปปินส์",
+        "th": "ไทย",
+        "vn": "เวียดนาม"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "วัน",
+        "parcels": "จำนวนพัสดุ"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "ติดตามพัสดุ",
+      "description": "เริ่มติดตามพัสดุด้วยรหัสพัสดุของ Shopee Xpress",
+      "fields": {
+        "tracking_code": {
+          "name": "รหัสพัสดุ",
+          "description": "รหัสพัสดุของ Shopee Xpress"
+        },
+        "market": {
+          "name": "ตลาด",
+          "description": "ฮับของตลาดใดที่จะเพิ่มพัสดุนี้เข้าไป จำเป็นเฉพาะเมื่อมีการตั้งค่าฮับมากกว่าหนึ่งแห่ง"
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "เลิกติดตามพัสดุ",
+      "description": "หยุดติดตามพัสดุด้วยรหัสพัสดุของ Shopee Xpress",
+      "fields": {
+        "tracking_code": {
+          "name": "รหัสพัสดุ",
+          "description": "รหัสพัสดุของ Shopee Xpress ที่จะเลิกติดตาม"
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "มีการลงทะเบียนพัสดุ",
+      "parcel_status_changed": "สถานะของพัสดุเปลี่ยนแปลง",
+      "parcel_delivered": "พัสดุถูกจัดส่งแล้ว",
+      "parcel_delivery_time_changed": "เวลาจัดส่งโดยประมาณของพัสดุเปลี่ยนแปลง"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "รีเฟรช"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "การจัดส่ง"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "พัสดุที่กำลังมาถึง",
+        "unit_of_measurement": "พัสดุ"
+      },
+      "next_delivery": {
+        "name": "การจัดส่งครั้งถัดไป"
+      },
+      "delivered_parcels": {
+        "name": "พัสดุที่จัดส่งแล้ว",
+        "unit_of_measurement": "พัสดุ"
+      },
+      "last_update": {
+        "name": "อัปเดตล่าสุดที่สำเร็จ"
+      },
+      "parcel": {
+        "name": "พัสดุ {barcode}"
+      }
+    }
+  }
+}

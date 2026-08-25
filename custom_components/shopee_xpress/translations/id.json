@@ -1,0 +1,139 @@
+{
+  "title": "Shopee Xpress",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Siapkan Shopee Xpress",
+        "description": "Shopee Xpress menjalankan layanan terpisah untuk setiap pasar — kode resi dari satu pasar tidak akan berfungsi di pasar lain. Pilih pasar yang digunakan hub ini; tambahkan hub lain nanti untuk pasar kedua. Anda dapat menambahkan paket setelah penyiapan selesai.",
+        "data": {
+          "market": "Pasar"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opsi Shopee Xpress",
+        "sections": {
+          "parcels": {
+            "name": "Paket",
+            "data": {
+              "add": "Tambahkan paket",
+              "remove": "Hapus paket"
+            },
+            "data_description": {
+              "add": "Masukkan kode resi untuk pasar hub ini. Anda dapat menemukannya di halaman pesanan Shopee atau konfirmasi pengiriman."
+            }
+          },
+          "delivered": {
+            "name": "Paket terkirim",
+            "data": {
+              "delivered_filter_type": "Filter berdasarkan",
+              "delivered_filter_amount": "Jumlah"
+            },
+            "data_description": {
+              "delivered_filter_type": "Tampilkan paket terkirim dari X hari terakhir, atau batasi hingga X paket terbaru.",
+              "delivered_filter_amount": "Jumlah hari atau paket yang ditampilkan."
+            }
+          },
+          "history": {
+            "name": "Riwayat paket",
+            "data": {
+              "include_history": "Sertakan riwayat status"
+            },
+            "data_description": {
+              "include_history": "Menambahkan atribut riwayat per paket yang mencantumkan setiap pembaruan status (waktu, status, teks asli). Nonaktif secara default."
+            }
+          }
+        }
+      }
+    },
+    "error": {
+      "already_tracked": "Paket tersebut sudah dilacak."
+    }
+  },
+  "selector": {
+    "market": {
+      "options": {
+        "br": "Brasil",
+        "id": "Indonesia",
+        "my": "Malaysia",
+        "ph": "Filipina",
+        "th": "Thailand",
+        "vn": "Vietnam"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "Hari",
+        "parcels": "Jumlah paket"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "Lacak paket",
+      "description": "Mulai melacak paket menggunakan kode resi Shopee Xpress.",
+      "fields": {
+        "tracking_code": {
+          "name": "Kode resi",
+          "description": "Kode resi Shopee Xpress."
+        },
+        "market": {
+          "name": "Pasar",
+          "description": "Hub pasar mana yang akan ditambahkan. Hanya diperlukan jika lebih dari satu hub telah disiapkan."
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "Berhenti melacak paket",
+      "description": "Berhenti melacak paket menggunakan kode resi Shopee Xpress.",
+      "fields": {
+        "tracking_code": {
+          "name": "Kode resi",
+          "description": "Kode resi Shopee Xpress yang akan berhenti dilacak."
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "Paket telah terdaftar",
+      "parcel_status_changed": "Status paket berubah",
+      "parcel_delivered": "Paket telah terkirim",
+      "parcel_delivery_time_changed": "Perkiraan waktu pengiriman paket berubah"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "Segarkan"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "Pengiriman"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "Paket masuk",
+        "unit_of_measurement": "paket"
+      },
+      "next_delivery": {
+        "name": "Pengiriman berikutnya"
+      },
+      "delivered_parcels": {
+        "name": "Paket terkirim",
+        "unit_of_measurement": "paket"
+      },
+      "last_update": {
+        "name": "Pembaruan berhasil terakhir"
+      },
+      "parcel": {
+        "name": "Paket {barcode}"
+      }
+    }
+  }
+}
