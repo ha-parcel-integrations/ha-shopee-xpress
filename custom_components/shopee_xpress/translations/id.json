@@ -48,23 +48,23 @@
           }
         },
         "menu_options": {
-          "parcels": "Parcels",
-          "settings": "Settings"
+          "parcels": "Paket",
+          "settings": "Pengaturan"
         }
       },
       "parcels": {
-        "title": "Parcels",
+        "title": "Paket",
         "data": {
-          "tracking_codes": "Tracking codes"
+          "tracking_codes": "Kode pelacakan"
         }
       },
       "settings": {
-        "title": "Settings",
+        "title": "Pengaturan",
         "data": {
-          "delivered_filter_type": "Delivered parcels: filter by",
-          "delivered_filter_amount": "Delivered parcels: amount",
-          "include_history": "Include status history",
-          "refresh_interval": "Refresh every"
+          "delivered_filter_type": "Paket terkirim: filter berdasarkan",
+          "delivered_filter_amount": "Paket terkirim: jumlah",
+          "include_history": "Sertakan riwayat status",
+          "refresh_interval": "Segarkan setiap"
         }
       }
     },

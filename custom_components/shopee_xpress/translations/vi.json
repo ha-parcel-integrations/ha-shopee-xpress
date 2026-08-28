@@ -48,23 +48,23 @@
           }
         },
         "menu_options": {
-          "parcels": "Parcels",
-          "settings": "Settings"
+          "parcels": "Kiện hàng",
+          "settings": "Cài đặt"
         }
       },
       "parcels": {
-        "title": "Parcels",
+        "title": "Kiện hàng",
         "data": {
-          "tracking_codes": "Tracking codes"
+          "tracking_codes": "Mã vận đơn"
         }
       },
       "settings": {
-        "title": "Settings",
+        "title": "Cài đặt",
         "data": {
-          "delivered_filter_type": "Delivered parcels: filter by",
-          "delivered_filter_amount": "Delivered parcels: amount",
-          "include_history": "Include status history",
-          "refresh_interval": "Refresh every"
+          "delivered_filter_type": "Kiện hàng đã giao: lọc theo",
+          "delivered_filter_amount": "Kiện hàng đã giao: số lượng",
+          "include_history": "Bao gồm lịch sử trạng thái",
+          "refresh_interval": "Làm mới mỗi"
         }
       }
     },

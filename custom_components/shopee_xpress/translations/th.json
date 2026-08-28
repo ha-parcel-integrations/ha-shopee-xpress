@@ -48,23 +48,23 @@
           }
         },
         "menu_options": {
-          "parcels": "Parcels",
-          "settings": "Settings"
+          "parcels": "พัสดุ",
+          "settings": "การตั้งค่า"
         }
       },
       "parcels": {
-        "title": "Parcels",
+        "title": "พัสดุ",
         "data": {
-          "tracking_codes": "Tracking codes"
+          "tracking_codes": "รหัสติดตาม"
         }
       },
       "settings": {
-        "title": "Settings",
+        "title": "การตั้งค่า",
         "data": {
-          "delivered_filter_type": "Delivered parcels: filter by",
-          "delivered_filter_amount": "Delivered parcels: amount",
-          "include_history": "Include status history",
-          "refresh_interval": "Refresh every"
+          "delivered_filter_type": "พัสดุที่จัดส่งแล้ว: กรองตาม",
+          "delivered_filter_amount": "พัสดุที่จัดส่งแล้ว: จำนวน",
+          "include_history": "รวมประวัติสถานะ",
+          "refresh_interval": "รีเฟรชทุก"
         }
       }
     },
