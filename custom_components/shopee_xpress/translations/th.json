@@ -46,6 +46,25 @@
               "include_history": "เพิ่มแอตทริบิวต์ประวัติของแต่ละพัสดุ ซึ่งแสดงรายการการอัปเดตสถานะแต่ละครั้ง (เวลา สถานะ ข้อความต้นฉบับ) ปิดใช้งานตามค่าเริ่มต้น"
             }
           }
+        },
+        "menu_options": {
+          "parcels": "Parcels",
+          "settings": "Settings"
+        }
+      },
+      "parcels": {
+        "title": "Parcels",
+        "data": {
+          "tracking_codes": "Tracking codes"
+        }
+      },
+      "settings": {
+        "title": "Settings",
+        "data": {
+          "delivered_filter_type": "Delivered parcels: filter by",
+          "delivered_filter_amount": "Delivered parcels: amount",
+          "include_history": "Include status history",
+          "refresh_interval": "Refresh every"
         }
       }
     },

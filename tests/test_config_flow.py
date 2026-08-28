@@ -234,119 +234,36 @@ def _init_input(
     }
 
 
-async def test_options_form_has_no_market_field(hass):
-    """The market is fixed at setup; the options form never re-asks for it."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
+async def _open_options_step(hass, entry, step_id: str):
+    """Start the options flow and select one of its two top-level routes."""
     result = await hass.config_entries.options.async_init(entry.entry_id)
-    assert CONF_MARKET not in result["data_schema"].schema
+    assert result["type"] == "menu"
+    assert result["menu_options"] == ["parcels", "settings"]
+    return await hass.config_entries.options.async_configure(
+        result["flow_id"], {"next_step_id": step_id}
+    )
 
 
-async def test_options_add_parcel_is_a_plain_add_no_fetch(hass):
-    entry = _hub([])
+async def test_options_parcel_list_can_be_cleared(hass):
+    """A submitted empty list removes the final manually tracked parcel."""
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
     entry.add_to_hass(hass)
-
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "parcels")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="my000000000000")
+        result["flow_id"], {"tracking_codes": []}
     )
     assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "MY000000000000"}]
-    assert result["data"][CONF_MARKET] == "MY"  # carried forward, not reset
+    assert result["data"][CONF_PARCELS] == []
 
 
-async def test_options_add_code_with_separators(hass):
-    """Pasted codes with spaces/dashes are sanitised like the consumer site."""
-    entry = _hub([])
+async def test_options_settings_preserve_parcel_list(hass):
+    """Saving settings must never replace the manually tracked parcel list."""
+    parcels = [{CONF_TRACKING_CODE: "EXAMPLE111111"}]
+    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: parcels})
     entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await _open_options_step(hass, entry, "settings")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="my 000000-000000")
-    )
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "MY000000000000"}]
-
-
-async def test_options_add_unrecognised_shape_is_accepted_not_rejected(hass):
-    """The maintainer cut this warning entirely — no form error, ever."""
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="zz")
+        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False}
     )
     assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "ZZ"}]
-    assert "errors" not in result or not result.get("errors")
-
-
-async def test_options_add_pure_digit_code_accepted(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="123456789")
-    )
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "123456789"}]
-
-
-async def test_options_add_duplicate_rejected(hass):
-    entry = _hub([{CONF_TRACKING_CODE: "MY000000000000"}])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="MY000000000000", remove=[])
-    )
-    assert result["errors"]["base"] == "already_tracked"
-
-
-async def test_options_remove_parcel(hass):
-    entry = _hub([
-        {CONF_TRACKING_CODE: "MY000000000000"},
-        {CONF_TRACKING_CODE: "TH000000000000"},
-    ])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(remove=["MY000000000000"])
-    )
-    assert result["type"] == "create_entry"
-    codes = {p[CONF_TRACKING_CODE] for p in result["data"][CONF_PARCELS]}
-    assert codes == {"TH000000000000"}
-
-
-async def test_options_remove_then_readd_same_code(hass):
-    """Remove-then-add order: re-adding a just-removed code works."""
-    entry = _hub([{CONF_TRACKING_CODE: "MY000000000000"}])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input(add="MY000000000000", remove=["MY000000000000"])
-    )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "MY000000000000"}]
-
-
-async def test_options_changes_history_and_delivered(hass):
-    entry = _hub([])
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"],
-        _init_input(history=True, filter_type="parcels", amount=5),
-    )
-    assert result["type"] == "create_entry"
-    assert result["data"][CONF_INCLUDE_HISTORY] is True
-    assert result["data"][CONF_DELIVERED_FILTER_TYPE] == "parcels"
-    assert result["data"][CONF_DELIVERED_FILTER_AMOUNT] == 5
-    assert result["data"][CONF_MARKET] == "MY"
-
-
-async def test_options_market_survives_a_no_op_submission(hass):
-    entry = _hub([{CONF_TRACKING_CODE: "TH000000000000"}], market="TH")
-    entry.add_to_hass(hass)
-    result = await hass.config_entries.options.async_init(entry.entry_id)
-    result = await hass.config_entries.options.async_configure(
-        result["flow_id"], _init_input()
-    )
-    assert result["data"][CONF_MARKET] == "TH"
-    assert result["data"][CONF_PARCELS] == [{CONF_TRACKING_CODE: "TH000000000000"}]
+    assert result["data"][CONF_PARCELS] == parcels

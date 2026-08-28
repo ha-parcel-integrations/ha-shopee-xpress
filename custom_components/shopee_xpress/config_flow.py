@@ -12,6 +12,7 @@ its shape is unrecognised, store it. No fetch happens at add-time — see
 CLAUDE.md for why the input-collision visibility idea from an earlier
 revision of this flow was cut rather than relocated.
 """
+
 from __future__ import annotations
 
 import logging
@@ -26,7 +27,6 @@ from homeassistant.config_entries import (
     OptionsFlow,
 )
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.data_entry_flow import section
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
 
@@ -109,6 +109,7 @@ async def _sorted_market_options(hass: HomeAssistant) -> list[str]:
     be determined) — the six English names are always available since
     `strings.json` doubles as the English translation source.
     """
+
     def _key(code: str) -> str:
         # The translation cache keys every string with a `component.<domain>.`
         # prefix ahead of the same path strings.json uses, regardless of how
@@ -117,9 +118,13 @@ async def _sorted_market_options(hass: HomeAssistant) -> list[str]:
         return f"component.{DOMAIN}.selector.{CONF_MARKET}.options.{code.lower()}"
 
     language = hass.config.language or "en"
-    names = await async_get_translations(hass, language, "selector", integrations=[DOMAIN])
+    names = await async_get_translations(
+        hass, language, "selector", integrations=[DOMAIN]
+    )
     if not any(_key(code) in names for code in MARKETS):
-        names = await async_get_translations(hass, "en", "selector", integrations=[DOMAIN])
+        names = await async_get_translations(
+            hass, "en", "selector", integrations=[DOMAIN]
+        )
     codes = sorted(MARKETS, key=lambda code: names.get(_key(code), code))
     return [code.lower() for code in codes]
 
@@ -194,7 +199,9 @@ class ShopeeXpressConfigFlow(ConfigFlow, domain=DOMAIN):
         options = await _sorted_market_options(self.hass)
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({vol.Required(CONF_MARKET): _market_selector(options)}),
+            data_schema=vol.Schema(
+                {vol.Required(CONF_MARKET): _market_selector(options)}
+            ),
         )
 
 
@@ -209,118 +216,103 @@ class ShopeeXpressOptionsFlowHandler(OptionsFlow):
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Show and handle the single sectioned options form."""
+        """Offer parcel management separately from integration settings."""
+        return self.async_show_menu(
+            step_id="init", menu_options=["parcels", "settings"]
+        )
+
+    async def async_step_parcels(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show and handle the complete tracked-code list."""
         errors: dict[str, str] = {}
-        parcels = _current_parcels(self.config_entry)
-
         if user_input is not None:
-            parcels_section = user_input.get("parcels", {})
-            delivered_section = user_input.get("delivered", {})
-            history_section = user_input.get("history", {})
-
-            # Remove first, then add — so re-adding a just-removed code works.
-            to_remove = set(parcels_section.get("remove", []))
-            parcels = [p for p in parcels if p[CONF_TRACKING_CODE] not in to_remove]
-
-            add_code = normalize_tracking_code(parcels_section.get("add") or "")
-            if add_code:
-                warn_unrecognised_tracking_code(add_code)
-                if any(p[CONF_TRACKING_CODE] == add_code for p in parcels):
-                    errors["base"] = "already_tracked"
-                else:
-                    parcels.append({CONF_TRACKING_CODE: add_code})
-
+            codes = list(
+                dict.fromkeys(
+                    normalize_tracking_code(code)
+                    for code in user_input.get("tracking_codes", [])
+                    if normalize_tracking_code(code)
+                )
+            )
+            for code in codes:
+                warn_unrecognised_tracking_code(code)
             if not errors:
                 return self.async_create_entry(
                     title="",
                     data={
-                        # An options flow's `data` replaces `entry.options`
-                        # wholesale rather than merging into it — the market
-                        # must be carried forward explicitly or it resets.
-                        CONF_MARKET: self.config_entry.options.get(CONF_MARKET),
-                        CONF_PARCELS: parcels,
-                        CONF_DELIVERED_FILTER_TYPE: delivered_section[
-                            CONF_DELIVERED_FILTER_TYPE
-                        ],
-                        CONF_DELIVERED_FILTER_AMOUNT: int(
-                            delivered_section[CONF_DELIVERED_FILTER_AMOUNT]
-                        ),
-                        CONF_INCLUDE_HISTORY: bool(
-                            history_section[CONF_INCLUDE_HISTORY]
-                        ),
+                        **self.config_entry.options,
+                        CONF_PARCELS: [{CONF_TRACKING_CODE: code} for code in codes],
                     },
                 )
-
-        current = self.config_entry.options
-
-        parcels_fields: dict[Any, Any] = {vol.Optional("add", default=""): str}
-        if parcels:
-            parcels_fields[vol.Optional("remove", default=[])] = selector.SelectSelector(
-                selector.SelectSelectorConfig(
-                    options=[
-                        selector.SelectOptionDict(
-                            value=p[CONF_TRACKING_CODE],
-                            label=p[CONF_TRACKING_CODE],
-                        )
-                        for p in parcels
-                    ],
-                    multiple=True,
-                    mode=selector.SelectSelectorMode.LIST,
-                )
-            )
-
+        current_codes = [
+            parcel[CONF_TRACKING_CODE] for parcel in _current_parcels(self.config_entry)
+        ]
         schema = vol.Schema(
             {
-                vol.Required("parcels"): section(
-                    vol.Schema(parcels_fields), {"collapsed": False}
-                ),
-                vol.Required("delivered"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_DELIVERED_FILTER_TYPE,
-                                default=current.get(
-                                    CONF_DELIVERED_FILTER_TYPE,
-                                    DEFAULT_DELIVERED_FILTER_TYPE,
-                                ),
-                            ): selector.SelectSelector(
-                                selector.SelectSelectorConfig(
-                                    options=["days", "parcels"],
-                                    translation_key=CONF_DELIVERED_FILTER_TYPE,
-                                    mode=selector.SelectSelectorMode.LIST,
-                                )
-                            ),
-                            vol.Required(
-                                CONF_DELIVERED_FILTER_AMOUNT,
-                                default=current.get(
-                                    CONF_DELIVERED_FILTER_AMOUNT,
-                                    DEFAULT_DELIVERED_FILTER_AMOUNT,
-                                ),
-                            ): selector.NumberSelector(
-                                selector.NumberSelectorConfig(
-                                    min=1, max=365, step=1, mode=selector.NumberSelectorMode.BOX
-                                )
-                            ),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
-                vol.Required("history"): section(
-                    vol.Schema(
-                        {
-                            vol.Required(
-                                CONF_INCLUDE_HISTORY,
-                                default=current.get(
-                                    CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
-                                ),
-                            ): selector.BooleanSelector(),
-                        }
-                    ),
-                    {"collapsed": True},
-                ),
+                vol.Optional("tracking_codes"): selector.TextSelector(
+                    selector.TextSelectorConfig(multiple=True)
+                )
             }
         )
-
         return self.async_show_form(
-            step_id="init", data_schema=schema, errors=errors
+            step_id="parcels",
+            data_schema=self.add_suggested_values_to_schema(
+                schema, {"tracking_codes": current_codes}
+            ),
+            errors=errors,
+        )
+
+    async def async_step_settings(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Show and handle non-parcel integration settings."""
+        if user_input is not None:
+            return self.async_create_entry(
+                title="",
+                data={
+                    **self.config_entry.options,
+                    CONF_DELIVERED_FILTER_TYPE: user_input[CONF_DELIVERED_FILTER_TYPE],
+                    CONF_DELIVERED_FILTER_AMOUNT: int(
+                        user_input[CONF_DELIVERED_FILTER_AMOUNT]
+                    ),
+                    CONF_INCLUDE_HISTORY: bool(user_input[CONF_INCLUDE_HISTORY]),
+                },
+            )
+
+        current = self.config_entry.options
+        return self.async_show_form(
+            step_id="settings",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_DELIVERED_FILTER_TYPE,
+                        default=current.get(
+                            CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
+                        ),
+                    ): selector.SelectSelector(
+                        selector.SelectSelectorConfig(
+                            options=["days", "parcels"],
+                            translation_key=CONF_DELIVERED_FILTER_TYPE,
+                            mode=selector.SelectSelectorMode.LIST,
+                        )
+                    ),
+                    vol.Required(
+                        CONF_DELIVERED_FILTER_AMOUNT,
+                        default=current.get(
+                            CONF_DELIVERED_FILTER_AMOUNT,
+                            DEFAULT_DELIVERED_FILTER_AMOUNT,
+                        ),
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=1, max=365, step=1, mode=selector.NumberSelectorMode.BOX
+                        )
+                    ),
+                    vol.Required(
+                        CONF_INCLUDE_HISTORY,
+                        default=current.get(
+                            CONF_INCLUDE_HISTORY, DEFAULT_INCLUDE_HISTORY
+                        ),
+                    ): selector.BooleanSelector(),
+                }
+            ),
         )
