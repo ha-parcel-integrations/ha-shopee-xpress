@@ -73,7 +73,7 @@ if you can help test one.
 
 ## Requirements
 
-- Home Assistant 2024.7 or newer
+- Home Assistant 2024.12 or newer
 - A Shopee Xpress parcel and its tracking code — no account needed. Shopee
   Xpress also resolves a plain order number, so either one works.
 
@@ -127,6 +127,11 @@ Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress
 | `sensor.shopee_xpress_last_successful_update` | Diagnostic: when Shopee Xpress was last polled successfully |
 
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
+
+A **`button.shopee_xpress_refresh`** entity triggers an immediate poll outside
+the regular interval, and a **`calendar.shopee_xpress_deliveries`** entity
+shows expected delivery dates for active parcels — read-only, no extra API
+calls.
 
 ## Parcel status reference
 
