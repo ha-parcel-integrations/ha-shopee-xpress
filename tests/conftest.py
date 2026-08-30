@@ -20,8 +20,7 @@ def reset_one_shot_warnings():
     makes them leak across tests, so whether a warning fires would otherwise
     depend on test order.
     """
-    from custom_components.shopee_xpress import config_flow
-    from custom_components.shopee_xpress import parcels
+    from custom_components.shopee_xpress import config_flow, parcels
 
     config_flow._warned_formats.clear()
     parcels._warned.clear()
