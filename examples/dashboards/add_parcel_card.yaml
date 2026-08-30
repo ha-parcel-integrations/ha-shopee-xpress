@@ -32,8 +32,6 @@ shopee_xpress_track_new_parcel:
     - action: shopee_xpress.track_parcel
       data:
         tracking_code: "{{ states('input_text.shopee_xpress_new_parcel') | trim }}"
-        
-        
     - action: input_text.set_value
       target:
         entity_id: input_text.shopee_xpress_new_parcel
