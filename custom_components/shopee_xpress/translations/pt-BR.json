@@ -48,12 +48,12 @@
           }
         },
         "menu_options": {
-          "parcels": "Encomendas",
+          "parcels": "Gerenciar encomendas",
           "settings": "Configurações"
         }
       },
       "parcels": {
-        "title": "Encomendas",
+        "title": "Gerenciar encomendas",
         "data": {
           "tracking_codes": "Códigos de rastreamento"
         }

@@ -48,12 +48,12 @@
           }
         },
         "menu_options": {
-          "parcels": "Paket",
+          "parcels": "Kelola paket",
           "settings": "Pengaturan"
         }
       },
       "parcels": {
-        "title": "Paket",
+        "title": "Kelola paket",
         "data": {
           "tracking_codes": "Kode pelacakan"
         }

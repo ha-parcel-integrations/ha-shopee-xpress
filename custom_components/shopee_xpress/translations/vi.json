@@ -48,12 +48,12 @@
           }
         },
         "menu_options": {
-          "parcels": "Kiện hàng",
+          "parcels": "Quản lý kiện hàng",
           "settings": "Cài đặt"
         }
       },
       "parcels": {
-        "title": "Kiện hàng",
+        "title": "Quản lý kiện hàng",
         "data": {
           "tracking_codes": "Mã vận đơn"
         }

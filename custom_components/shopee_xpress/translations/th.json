@@ -48,12 +48,12 @@
           }
         },
         "menu_options": {
-          "parcels": "พัสดุ",
+          "parcels": "จัดการพัสดุ",
           "settings": "การตั้งค่า"
         }
       },
       "parcels": {
-        "title": "พัสดุ",
+        "title": "จัดการพัสดุ",
         "data": {
           "tracking_codes": "รหัสติดตาม"
         }
