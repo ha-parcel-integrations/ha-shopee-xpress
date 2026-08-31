@@ -73,7 +73,6 @@ if you can help test one.
 
 ## Requirements
 
-- Home Assistant 2024.12 or newer
 - A Shopee Xpress parcel and its tracking code — no account needed. Shopee
   Xpress also resolves a plain order number, so either one works.
 
