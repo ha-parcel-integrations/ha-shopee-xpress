@@ -35,6 +35,13 @@ you act in one of these areas:
 
 ## Carrier-specific notes
 
+**No `awaiting_pickup` sensor yet — unconfirmed, not structural.** No
+capture has ever shown a parcel collected from a pickup point
+(carrier-research's `shopee-xpress.md`); `pickup`/`pickup_point` stay
+`False`/`None` in `parcels.py`. That is "unseen so far," not "cannot
+happen" — revisit once a real parcel settles it. See
+`.github/CONVENTIONS.md`'s pickup-point convention.
+
 **Status: manually verified against real parcels, and the test suite is
 written and green.** The payload mapping was built from maintainer-supplied
 captures plus one live re-probe made from the research repo, then confirmed
