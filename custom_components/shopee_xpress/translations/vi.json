@@ -63,8 +63,7 @@
         "data": {
           "delivered_filter_type": "Kiện hàng đã giao: lọc theo",
           "delivered_filter_amount": "Kiện hàng đã giao: số lượng",
-          "include_history": "Bao gồm lịch sử trạng thái",
-          "refresh_interval": "Làm mới mỗi"
+          "include_history": "Bao gồm lịch sử trạng thái"
         }
       }
     },

@@ -224,16 +224,40 @@ is permanent.
 
 The options flow is one sectioned form (`data_entry_flow.section`); changes apply
 without a restart. Two models, **do not mix them**:
-- **Account-less carriers** (the default) apply changes live: an update listener
-  retunes `coordinator.update_interval` and calls `async_request_refresh()`, so
-  added/removed parcel sensors appear immediately.
+- **Account-less carriers** (the default, and what this repo is) apply changes
+  live: an update listener calls `async_request_refresh()`, so added/removed
+  parcel sensors appear immediately. This is also the resume path after
+  dynamic polling has fully suspended (see below) — adding a parcel back
+  triggers the same refresh, which re-arms scheduling.
 - **Account-based carriers** call `async_schedule_reload` on submit and register
   **no** update listener. Combining a listener with a reload-on-update flow is
   deprecated, an error in HA 2026.12+.
 
-The user-tunable poll interval is a deliberate HACS divergence (see
-CONVENTIONS.md); a carrier that throttles is generated with a fixed cadence and no
-polling option at all.
+## Polling
+
+Polling is dynamic and status-driven, unconditionally — there is no
+user-facing interval option and never has been one; the coordinator was
+originally generated with `--interval fixed` (a hardcoded 30-minute
+`REFRESH_INTERVAL_MINUTES` module constant, no config option, no dropdown at
+all) on the theory that this endpoint might throttle or soft-ban unusual
+traffic. That was never a measured finding — just the variant that got
+picked at generation time — so this repo now follows the same unconditional
+dynamic algorithm as every other barcode-based carrier in the suite
+(`carrier-research/dynamic-polling.md`), nothing carrier-specific left to
+flag. The coordinator recomputes its own cadence at the end of every
+refresh: a quiet window (00:00–06:00 local, with catch-up anchors at each
+end), a 15-minute hot tier when a tracked parcel is `out_for_delivery`
+(immediately, or from an hour before `planned_from`), a 45-minute mid tier
+otherwise, and a full stop (`update_interval = None`) when nothing is
+tracked or everything tracked is delivered. Shopee Xpress's `edd_info` block
+(the source of `planned_from`) is present for `out_for_delivery` parcels in
+three of six markets (Malaysia, Philippines, Thailand) and absent in the
+other three — when it's absent the parcel goes straight to the hot tier with
+no lookahead window to wait for, same as the "no ETA" carriers elsewhere in
+the suite; when it's present the ordinary hour-before-`planned_from`
+lookahead applies. See `coordinator.py`'s `_hottest_tier_minutes` /
+`_next_update_interval` and `ha-carrier-template`'s
+`example_carrier/coordinator.py` for the canonical shape this mirrors.
 
 ## Module layout
 

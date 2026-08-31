@@ -166,11 +166,30 @@ CONF_DELIVERED_FILTER_AMOUNT = "delivered_filter_amount"
 DEFAULT_DELIVERED_FILTER_TYPE = "days"
 DEFAULT_DELIVERED_FILTER_AMOUNT = 7
 
-# Refresh interval (minutes), fixed rather than user-configurable: rate
-# limiting on this endpoint has never been measured and there is no batch
-# form, so poll cost is one request per registered parcel — an aggressive
-# user-set interval would multiply against an unmeasured host.
-REFRESH_INTERVAL_MINUTES = 30
+# Dynamic, status-driven polling — unconditional, no user-facing interval
+# option. See carrier-research/dynamic-polling.md for the full algorithm and
+# the reasoning behind it.
+#
+# Quiet window: no polling between these local hours except the two anchors
+# below, for overnight / end-of-day catch-up.
+QUIET_WINDOW_START_HOUR = 0
+QUIET_WINDOW_END_HOUR = 6
+
+# Cadence while polling is active (minutes). Hot = at least one tracked,
+# not-yet-delivered parcel is out_for_delivery within HOT_LOOKAHEAD_HOURS of
+# its planned_from (or has no planned_from at all); mid = anything else still
+# in flight. This is a barcode-based coordinator (Section 2.1): when every
+# tracked parcel is delivered, or nothing is tracked, polling stops entirely
+# instead of falling to the mid tier — see coordinator.py's
+# ``_hottest_tier_minutes``.
+HOT_INTERVAL_MINUTES = 15
+MID_INTERVAL_MINUTES = 45
+HOT_LOOKAHEAD_HOURS = 1
+
+# Small, stable per-install offset added to every computed interval so
+# different installs don't all hit an anchor or tier boundary at the same
+# second. Deterministic (hash of the config entry id), not random.
+STAGGER_MINUTES = 7
 
 # Per-parcel status history is opt-in and off by default, identical across the
 # suite. Kept off by default even though the timeline arrives in the same

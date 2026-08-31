@@ -63,8 +63,7 @@
         "data": {
           "delivered_filter_type": "Paket terkirim: filter berdasarkan",
           "delivered_filter_amount": "Paket terkirim: jumlah",
-          "include_history": "Sertakan riwayat status",
-          "refresh_interval": "Segarkan setiap"
+          "include_history": "Sertakan riwayat status"
         }
       }
     },

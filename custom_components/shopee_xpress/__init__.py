@@ -11,7 +11,7 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import ShopeeXpressApiClient
 from .const import CONF_MARKET, DOMAIN, MARKETS, PLATFORMS
-from .coordinator import ShopeeXpressCoordinator, _refresh_interval
+from .coordinator import ShopeeXpressCoordinator
 from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
@@ -73,9 +73,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ShopeeXpressConfigEntry)
 async def _async_options_updated(
     hass: HomeAssistant, entry: ShopeeXpressConfigEntry
 ) -> None:
-    """Apply changed options: retune the interval and refresh the coordinator."""
+    """Apply changed options by refreshing the coordinator.
+
+    Also the resume path after dynamic polling has fully suspended (nothing
+    tracked, or everything tracked delivered) — adding a parcel back triggers
+    this same refresh, which re-arms scheduling.
+    """
     coordinator = entry.runtime_data.coordinator
-    coordinator.update_interval = _refresh_interval(entry)
     await coordinator.async_request_refresh()
 
 

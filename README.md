@@ -26,6 +26,7 @@ Part of the [ha-parcel-integrations](https://github.com/ha-parcel-integrations) 
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Options](#options)
+- [Dynamic polling](#dynamic-polling)
 - [Removal](#removal)
 - [Sensors](#sensors)
 - [Parcel status reference](#parcel-status-reference)
@@ -111,6 +112,30 @@ Open **Configure** on the integration entry:
 
 The market itself isn't editable after setup — add a second hub for a second market instead.
 
+## Dynamic polling
+
+Instead of polling Shopee Xpress at the same rate around the clock, the
+integration adjusts its own cadence to what your tracked parcels are
+actually doing:
+
+- **Quiet hours** — no polling between 00:00–06:00 local time, aside from one
+  catch-up check at each end of that window (around midnight and around 6
+  AM).
+- **Hot (every 15 minutes)** — as soon as a tracked parcel is
+  `out_for_delivery`, starting an hour before its expected delivery time (or
+  immediately if no time is known — which, for this carrier, depends on the
+  market; see the [Sensors](#sensors) section).
+- **Mid (every 45 minutes)** — any other in-progress parcel.
+- **Fully stopped** — nothing is tracked, or every tracked parcel has been
+  delivered. Adding a parcel back (via the options dialog, the
+  `shopee_xpress.track_parcel` service, or a dashboard button) resumes
+  polling immediately.
+- A small, fixed per-hub offset is added on top, so not every Shopee Xpress
+  hub out there polls at exactly the same second.
+
+This is not user-configurable — it is the only polling behaviour this
+integration has.
+
 ## Removal
 
 Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress → ⋮ → Delete**. Nothing is stored on Shopee Xpress's side.
@@ -128,7 +153,8 @@ Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress
 A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
 
 A **`button.shopee_xpress_refresh`** entity triggers an immediate poll outside
-the regular interval, and a **`calendar.shopee_xpress_deliveries`** entity
+the [dynamic polling](#dynamic-polling) cadence, and a
+**`calendar.shopee_xpress_deliveries`** entity
 shows expected delivery dates for active parcels — read-only, no extra API
 calls.
 
@@ -211,7 +237,7 @@ statuses and events.
 
 ## Disclaimer
 
-This integration uses the same public tracking endpoint as the Shopee Xpress mobile app and consumer-facing pages. It is not affiliated with, endorsed by, or supported by Shopee or Shopee Xpress. Be gentle with the polling interval — it is fixed rather than user-configurable for exactly this reason.
+This integration uses the same public tracking endpoint as the Shopee Xpress mobile app and consumer-facing pages. It is not affiliated with, endorsed by, or supported by Shopee or Shopee Xpress.
 
 ## Contributing
 

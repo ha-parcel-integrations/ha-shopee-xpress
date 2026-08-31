@@ -63,8 +63,7 @@
         "data": {
           "delivered_filter_type": "พัสดุที่จัดส่งแล้ว: กรองตาม",
           "delivered_filter_amount": "พัสดุที่จัดส่งแล้ว: จำนวน",
-          "include_history": "รวมประวัติสถานะ",
-          "refresh_interval": "รีเฟรชทุก"
+          "include_history": "รวมประวัติสถานะ"
         }
       }
     },

@@ -63,8 +63,7 @@
         "data": {
           "delivered_filter_type": "Encomendas entregues: filtrar por",
           "delivered_filter_amount": "Encomendas entregues: quantidade",
-          "include_history": "Incluir histórico de status",
-          "refresh_interval": "Atualizar a cada"
+          "include_history": "Incluir histórico de status"
         }
       }
     },
