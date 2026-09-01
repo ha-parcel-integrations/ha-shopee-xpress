@@ -120,31 +120,19 @@ now a plain add, no fetch, same as every other carrier in the suite.**
 `spx_tn` also resolves against an order id, a Shopee-internal `sls_tn`, and a
 merchant-supplied free-text reference (`customer_tracking_no`) — confirmed on
 the wire: `?spx_tn=123` returned a real stranger's parcel because some seller
-set their reference to `"123"`. This went through two revisions before
-landing:
-
-- **Revision 1 (the build plan's own §2):** config flow warns on a short
-  input. Cut by the maintainer before the first build — no on-screen message,
-  short input is accepted like any other.
-- **Revision 2 (this repo's first cut of the redesign below):** setup fetches
-  the code once and shows what resolved before creating the entry, later
-  moved to a second options-flow step shown right after `parcels.add`. Cut
-  too, in the same review: the maintainer wants adding a code to work exactly
-  like `ha-dragonfly` and the rest of the suite — type it, it's added, done.
-  No fetch-on-add anywhere in the flow.
-- **What's left:** the tracking-code regex in `config_flow.py` is **warn-only,
-  never a rejection** (`valid_tracking_code`/`warn_unrecognised_tracking_code`)
-  — a pure-digit input is a first-class second identifier namespace (an order
-  id), not a malformed code, and the alphanumeric shape has already been
-  widened twice by new markets. That's a *format* check and a *log-level*
-  warning, unrelated to the collision problem above — it stays. The collision
-  problem itself has no active UI mitigation any more. Visibility survives
-  passively instead: `normalize_parcel()` in `parcels.py` still computes
-  `raw["resolved_number"]` / `raw["resolved_number_is_internal"]`
-  (`order_info.spx_tn`, or `sls_tracking_info.sls_tn` labelled internal when
-  `order_info` is absent) on every real poll, so the resolved number is one
-  click away as a parcel attribute once a tracked code actually gets fetched —
-  just not surfaced proactively at add-time any more.
+set their reference to `"123"`. No active UI mitigation: the maintainer wants
+adding a code to work exactly like `ha-dragonfly` and the rest of the suite —
+type it, it's added, done, no warn-on-short-input and no fetch-on-add. The
+tracking-code regex in `config_flow.py` stays **warn-only, never a rejection**
+(`valid_tracking_code`/`warn_unrecognised_tracking_code`) for an unrelated
+reason — a pure-digit input is a first-class second identifier namespace (an
+order id), not a malformed code, and the alphanumeric shape has already been
+widened twice by new markets. Visibility survives passively instead:
+`normalize_parcel()` in `parcels.py` computes `raw["resolved_number"]` /
+`raw["resolved_number_is_internal"]` (`order_info.spx_tn`, or
+`sls_tracking_info.sls_tn` labelled internal when `order_info` is absent) on
+every real poll, so the resolved number is one click away as a parcel
+attribute once a tracked code actually gets fetched.
 
 **The response's block set is not uniform, and is not a per-market split.**
 Only `sls_tracking_info` and two booleans are present in every response;
