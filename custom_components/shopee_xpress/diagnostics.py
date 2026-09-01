@@ -46,6 +46,13 @@ TO_REDACT = {
     # order identifiers
     "order_id",
     "client_order_id",
+    # base_info.product_id: over-redact per the pattern above — it identifies
+    # a specific purchased item/listing the same way order_id/client_order_id
+    # identify a specific order, even though its exact meaning is still
+    # unconfirmed (first seen in production, not in any of the six captures).
+    # order_type stays unredacted: a plain classification code, same category
+    # as milestone_code/issue_type below.
+    "product_id",
     # recipient
     "receiver_name",
     "receiver_type_name",

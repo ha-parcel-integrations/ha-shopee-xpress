@@ -412,6 +412,28 @@ def test_normalize_malaysia_delivered():
     assert len(parcel["history"]) == 7  # 10 records, 3 internal (display_flag 0)
 
 
+def test_normalize_surfaces_base_info_and_has_epod_in_raw():
+    """`base_info` and top-level `has_epod` were first seen in production,
+    never in any of the six original captures — surfaced unbranched in
+    `raw` (see const.py's OPTIONAL_DATA_BLOCKS/KNOWN_DATA_KEYS comments)."""
+    raw = my_data()
+    raw["base_info"] = {"order_type": 1, "product_id": 123456}
+    raw["has_epod"] = True
+    parcel = normalize_parcel(_stamped(raw, MY_CODE), market="MY")
+    assert parcel["raw"]["order_type"] == 1
+    assert parcel["raw"]["product_id"] == 123456
+    assert parcel["raw"]["has_epod"] is True
+
+
+def test_normalize_base_info_and_has_epod_absent_is_none():
+    """Absent on every one of the six original captures — must default to
+    None, not raise, same as every other optional block."""
+    parcel = normalize_parcel(_stamped(my_data(), MY_CODE), market="MY")
+    assert parcel["raw"]["order_type"] is None
+    assert parcel["raw"]["product_id"] is None
+    assert parcel["raw"]["has_epod"] is None
+
+
 # --- Thailand: sentinel exception values must not warn ---------------------
 
 
@@ -693,6 +715,17 @@ def test_payload_shape_warns_on_unexpected_record_key(caplog):
 def test_payload_shape_no_warning_for_known_shape(caplog):
     caplog.set_level(logging.WARNING)
     normalize_parcel(_stamped(my_data(), MY_CODE), market="MY")
+    assert "unrecognised" not in caplog.text.lower()
+
+
+def test_payload_shape_no_warning_for_base_info_and_has_epod(caplog):
+    """Regression: base_info/has_epod were the unrecognised top-level keys a
+    real production response warned about — now known, must not re-warn."""
+    caplog.set_level(logging.WARNING)
+    raw = my_data()
+    raw["base_info"] = {"order_type": 1, "product_id": 123456}
+    raw["has_epod"] = True
+    normalize_parcel(_stamped(raw, MY_CODE), market="MY")
     assert "unrecognised" not in caplog.text.lower()
 
 

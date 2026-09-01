@@ -445,13 +445,18 @@ def normalize_parcel(
     every other block is read with ``.get()`` and a default, in every market,
     regardless of which one this hub is bound to — the block set does not
     split cleanly along market lines (it depends on which identifier
-    namespace the lookup resolved against instead).
+    namespace the lookup resolved against instead). ``base_info`` (surfaced as
+    ``raw["order_type"]``/``raw["product_id"]``) and the top-level
+    ``has_epod`` boolean are the newest members of that optional set — first
+    seen in production, never in the six original captures, so both are
+    carried through unbranched rather than assigned any inferred meaning.
     """
     order_info = raw.get("order_info") or {}
     parcel_info = raw.get("parcel_info") or {}
     sls_tracking_info = raw.get("sls_tracking_info") or {}
     edd_info = raw.get("edd_info") or {}
     fulfillment_info = raw.get("fulfillment_info") or {}
+    base_info = raw.get("base_info") or {}
     requested_code = raw.get(REQUESTED_CODE_KEY)
 
     records = sls_tracking_info.get("records") or []
@@ -511,6 +516,9 @@ def normalize_parcel(
             "is_instant_order": raw.get("is_instant_order"),
             "is_shopee_market_order": raw.get("is_shopee_market_order"),
             "order_max_update_limit": order_info.get("order_max_update_limit"),
+            "order_type": base_info.get("order_type"),
+            "product_id": base_info.get("product_id"),
+            "has_epod": raw.get("has_epod"),
             "fulfillment_info_deliver_type": fulfillment_info.get("deliver_type"),
             "current_location": newest.get("current_location"),
             "next_location": newest.get("next_location"),

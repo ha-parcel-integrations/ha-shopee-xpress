@@ -63,6 +63,27 @@ async def test_diagnostics_redacts_raw_status_which_can_embed_a_name(hass):
     )
 
 
+async def test_diagnostics_redacts_product_id_but_not_order_type_or_has_epod(hass):
+    """`base_info.product_id` identifies a specific purchased item, the same
+    class of value as order_id/client_order_id — redacted. `order_type` is a
+    plain classification code (like milestone_code) and `has_epod` a bare
+    boolean; neither identifies a person, address or parcel, so both survive."""
+    entry = MagicMock()
+    entry.options = {"parcels": [], "market": "MY"}
+    raw = {**my_data(), REQUESTED_CODE_KEY: MY_CODE}
+    raw["base_info"] = {"order_type": 1, "product_id": 123456}
+    raw["has_epod"] = True
+    parcel = normalize_parcel(raw, market="MY")
+    entry.runtime_data.coordinator.data = [parcel]
+    entry.runtime_data.coordinator.delivered = []
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["incoming"][0]["raw"]["product_id"] == "**REDACTED**"
+    assert result["incoming"][0]["raw"]["order_type"] == 1
+    assert result["incoming"][0]["raw"]["has_epod"] is True
+
+
 async def test_diagnostics_counts_reflect_empty_lists(hass):
     entry = MagicMock()
     entry.options = {"parcels": [], "market": "MY"}

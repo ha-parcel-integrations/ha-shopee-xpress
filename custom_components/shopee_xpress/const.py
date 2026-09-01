@@ -88,14 +88,25 @@ MARKETS: dict[str, tuple[str, str]] = {
 # Every response's data block set differs by market *and* by which identifier
 # the request used, and only these two survive in all of them.
 ALWAYS_PRESENT_BLOCKS = frozenset({"sls_tracking_info"})
-# Every other top-level block normalize_parcel treats as optional.
+# Every other top-level block normalize_parcel treats as optional. `base_info`
+# joined this set after a one-shot _check_payload_shape() warning surfaced it
+# in production, never seen in any of the six original captures — meaning
+# still unknown for its two keys (order_type, product_id), same "carry it in
+# raw, do not branch on it" treatment already applied to order_max_update_limit.
 OPTIONAL_DATA_BLOCKS = frozenset(
-    {"order_info", "parcel_info", "edd_info", "fulfillment_info"}
+    {"order_info", "parcel_info", "edd_info", "fulfillment_info", "base_info"}
 )
 # The full top-level key set ever observed, used to log a response whose
-# shape has drifted rather than silently reading None everywhere.
+# shape has drifted rather than silently reading None everywhere. `has_epod`
+# joined this set alongside base_info — a boolean sibling of is_instant_order
+# / is_shopee_market_order, and plausibly "does any record carry a populated
+# epod" (every record's own epod has been "" in all six captures). Unlike the
+# missing-block case that was removed outright (_check_missing_blocks — a
+# functional non-gap, every read already defensive), these are keys arriving
+# for the *first* time, so they're mapped into raw below rather than silently
+# widened into this set with no user-facing change.
 KNOWN_DATA_KEYS = ALWAYS_PRESENT_BLOCKS | OPTIONAL_DATA_BLOCKS | frozenset(
-    {"is_instant_order", "is_shopee_market_order"}
+    {"is_instant_order", "is_shopee_market_order", "has_epod"}
 )
 KNOWN_RECORD_KEYS = frozenset(
     {

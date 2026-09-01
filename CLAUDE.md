@@ -200,6 +200,29 @@ debug-level log, gone. If block-set questions need revisiting later, the
 per-market pattern table in `tracking.md` is still the place to look, not a
 runtime warning.
 
+**`base_info` and top-level `has_epod` are two more optional keys, first seen
+in production rather than in any of the six original captures.** A one-shot
+`_check_payload_shape()` warning caught `base_info` (an object with
+`order_type`/`product_id`) and `has_epod` (a bool) on a real response. Unlike
+the missing-blocks case above — a functional non-gap, removed outright — these
+are keys arriving for the *first* time, so the call was not to reflexively
+silence the warning but to map them through: `base_info` joined
+`OPTIONAL_DATA_BLOCKS`/`has_epod` joined `KNOWN_DATA_KEYS` in `const.py`, and
+`normalize_parcel()` now surfaces `raw["order_type"]`, `raw["product_id"]` and
+`raw["has_epod"]` unbranched — same "carry it in raw, do not derive anything
+from it" treatment already given to `order_max_update_limit`, since a single
+sighting with no value shown in the log line isn't enough to pin down either
+field's real vocabulary. `has_epod` is plausibly "does this parcel have an
+electronic proof of delivery" — the per-record `epod` field has been `""` in
+every one of the six captures, so this may be the first evidence it is ever
+populated — but that is a guess, not a confirmed mapping, so it stays a raw
+boolean rather than a new canonical field. `base_info.product_id` was added to
+`diagnostics.py`'s `TO_REDACT` (same class of value as `order_id`/
+`client_order_id`: identifies a specific purchased item); `order_type` and
+`has_epod` were not, being a plain classification code and a bare boolean
+respectively. None of this changes `CAPABILITIES` — these are `raw`-only
+fields, not part of the fixed parcel contract `CAPABILITIES` tracks.
+
 **`url` is constructed, not read from the payload — no API response in any
 market carries one.** `const.py`'s `TRACKING_URL` template
 (`https://{host}/track?{tracking_code}`) reuses each market's API host with a
