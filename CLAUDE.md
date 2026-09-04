@@ -52,9 +52,8 @@ milestone/tracking codes, same record counts and duplicate-code positions
 (`F004` ×3 in the Brazilian fixture, `F440`/sorting-centre pairs in Malaysia
 and the Philippines, the Vietnamese return's 26-record history) — and
 `pytest --cov=custom_components.shopee_xpress` is 100% at 175 tests. What's
-left: tag `1.0.0` and then delete `BUILD_PLAN.md` per its own repo's rule —
-both deliberately held back as a separate, explicitly-confirmed step, not
-done as part of writing the tests.
+left: tag `1.0.0` — deliberately held back as a separate,
+explicitly-confirmed step, not done as part of writing the tests.
 
 **A diagnostics redaction gap surfaced while writing the tests, fixed in the
 same pass — worth knowing about if you touch `diagnostics.py`.**
