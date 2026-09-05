@@ -35,6 +35,18 @@ you act in one of these areas:
 
 ## Carrier-specific notes
 
+**No 429-backoff and no "unknown code" not-found branch — deliberate, not an
+oversight.** Unlike the template, `api.py`/`coordinator.py` have no
+`retry_after`/`status_code` fields, no `BACKOFF_BASE_SECONDS`/
+`_consecutive_429` backoff path, and no placeholder branch that returns `None`
+for an unknown code. `ShopeeXpressApiError` is raised for every non-success
+response uniformly, because this carrier's failure envelope can't distinguish
+"not found" from "backend broken" — there is nothing in the response shape to
+branch on, so every non-success becomes the same generic error rather than a
+richer, differentiated one. `carrier-research/shopee-xpress/shopee-xpress.md`
+records `rate_limit: unknown`, so there's no evidence a 429 path is even
+needed; revisit if that changes.
+
 **No `awaiting_pickup` sensor yet — unconfirmed, not structural.** No
 capture has ever shown a parcel collected from a pickup point
 (carrier-research's `shopee-xpress.md`); `pickup`/`pickup_point` stay
@@ -51,9 +63,10 @@ real (redacted) captures faithfully — same tracking-code shapes, same
 milestone/tracking codes, same record counts and duplicate-code positions
 (`F004` ×3 in the Brazilian fixture, `F440`/sorting-centre pairs in Malaysia
 and the Philippines, the Vietnamese return's 26-record history) — and
-`pytest --cov=custom_components.shopee_xpress` is 100% at 175 tests. What's
-left: tag `1.0.0` — deliberately held back as a separate,
-explicitly-confirmed step, not done as part of writing the tests.
+`pytest --cov=custom_components.shopee_xpress` passes with coverage above
+the suite's required threshold (see "Running tests" below for the current
+number, which is not repeated here to avoid this section going stale on
+every release).
 
 **A diagnostics redaction gap surfaced while writing the tests, fixed in the
 same pass — worth knowing about if you touch `diagnostics.py`.**
@@ -287,7 +300,7 @@ lookahead applies. See `coordinator.py`'s `_hottest_tier_minutes` /
 | `config_flow.py` | partly (code validation) |
 | `sensor.py` / `button.py` / `calendar.py` / `device_trigger.py` | no |
 | `diagnostics.py` | partly (`TO_REDACT`) |
-| `services.py` (`track_parcel` / `untrack_parcel`, account-less only) | no |
+| `services.py` (`track_parcel` / `untrack_parcel`, account-less only) | **yes** (optional `market` field, multi-hub disambiguation — see "Carrier-specific notes" above) |
 
 `parcels.py` is deliberately free of I/O and HA objects so the per-carrier part
 stays unit-testable without Home Assistant. Config: `ConfigEntry.runtime_data`
@@ -305,8 +318,10 @@ into public issues.
 python -m pytest tests/ --cov=custom_components.shopee_xpress
 ```
 
-Coverage must stay **above 95%** (silver `test-coverage` rule) — currently
-100%, 175 tests. Run before committing. A code change updates the README +
+Coverage must stay **above 95%** (silver `test-coverage` rule). Run
+`--cov=custom_components.shopee_xpress` to see the current number and test
+count — not repeated here since both drift with every release. Run before
+committing. A code change updates the README +
 this file + `docs/` in the same commit; the API reference lives in this
 carrier's own directory under the private `carrier-research/shopee-xpress/api/`,
 never in this repo.
