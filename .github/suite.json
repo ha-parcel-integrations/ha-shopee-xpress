@@ -1,0 +1,5 @@
+{
+  "kind": "integration",
+  "domain": "shopee_xpress",
+  "research_api_path": "carrier-research/shopee-xpress/api/"
+}
