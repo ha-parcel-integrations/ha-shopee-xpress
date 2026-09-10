@@ -23,6 +23,12 @@ you act in one of these areas:
 | consider "fixing" a lint/pattern the skill flags (poll interval, inline client, sync requests) | *Deliberate skill divergences* — likely intentional, don't re-flag |
 | commit, bump, tag, release, or write release notes; add a feature without a test | *Workflow / Commits / Versioning / Testing* |
 
+**Structure, options flow, dynamic polling and module layout are suite-wide**
+and identical in every carrier — the authoritative spec is
+[`ha-carrier-template/scaffold/CLAUDE.md`](https://github.com/ha-parcel-integrations/ha-carrier-template/blob/main/scaffold/CLAUDE.md).
+Where this repo diverges from it, that is recorded below under
+*Divergences from the scaffold*.
+
 **Suite-wide tripwires, kept inline on purpose:**
 - **First refresh in `__init__.py`, before `async_forward_entry_setups`** — from
   a forwarded platform HA can't catch `ConfigEntryNotReady` and half-sets-up the
@@ -250,67 +256,24 @@ selected by any HA user — English already covers both markets in practice.
 Re-check that upstream list before adding either file; don't assume the gap
 is permanent.
 
-## Options and reloads
+## Divergences from the scaffold
 
-The options flow is one sectioned form (`data_entry_flow.section`); changes apply
-without a restart. Two models, **do not mix them**:
-- **Account-less carriers** (the default, and what this repo is) apply changes
-  live: an update listener calls `async_request_refresh()`, so added/removed
-  parcel sensors appear immediately. This is also the resume path after
-  dynamic polling has fully suspended (see below) — adding a parcel back
-  triggers the same refresh, which re-arms scheduling.
-- **Account-based carriers** call `async_schedule_reload` on submit and register
-  **no** update listener. Combining a listener with a reload-on-update flow is
-  deprecated, an error in HA 2026.12+.
+Everything not listed here follows the scaffold exactly.
 
-## Polling
+*Dynamic polling* — Shopee Xpress's `edd_info` block (the source of
+`planned_from`) is present for `out_for_delivery` parcels in **three of six
+markets** (Malaysia, Philippines, Thailand) and absent in the other three. When
+absent the parcel goes straight to the hot tier with no lookahead; when present
+the ordinary hour-before-`planned_from` lookahead applies.
 
-Polling is dynamic and status-driven, unconditionally — there is no
-user-facing interval option and never has been one; the coordinator was
-originally generated with `--interval fixed` (a hardcoded 30-minute
-`REFRESH_INTERVAL_MINUTES` module constant, no config option, no dropdown at
-all) on the theory that this endpoint might throttle or soft-ban unusual
-traffic. That was never a measured finding — just the variant that got
-picked at generation time — so this repo now follows the same unconditional
-dynamic algorithm as every other barcode-based carrier in the suite
-(`carrier-research/dynamic-polling.md`), nothing carrier-specific left to
-flag. The coordinator recomputes its own cadence at the end of every
-refresh: a quiet window (00:00–06:00 local, with catch-up anchors at each
-end), a 15-minute hot tier when a tracked parcel is `out_for_delivery`
-(immediately, or from an hour before `planned_from`), a 45-minute mid tier
-otherwise, and a full stop (`update_interval = None`) when nothing is
-tracked or everything tracked is delivered. Shopee Xpress's `edd_info` block
-(the source of `planned_from`) is present for `out_for_delivery` parcels in
-three of six markets (Malaysia, Philippines, Thailand) and absent in the
-other three — when it's absent the parcel goes straight to the hot tier with
-no lookahead window to wait for, same as the "no ETA" carriers elsewhere in
-the suite; when it's present the ordinary hour-before-`planned_from`
-lookahead applies. See `coordinator.py`'s `_hottest_tier_minutes` /
-`_next_update_interval` and `ha-carrier-template`'s
-`example_carrier/coordinator.py` for the canonical shape this mirrors.
+This repo was originally generated with `--interval fixed` (a hardcoded
+30-minute `REFRESH_INTERVAL_MINUTES`, no dropdown) on the theory that the
+endpoint might throttle. That was never a measured finding, just the variant
+picked at generation time — it now follows the suite's unconditional dynamic
+algorithm like every other barcode-based carrier.
 
-## Module layout
-
-| File | Carrier-specific? |
-|---|---|
-| `api.py` (HTTP client, error types) | **yes** |
-| `const.py` (domain, URLs, `ParcelStatus`, option keys) | partly (URLs) |
-| `parcels.py` (status map, `normalize_parcel`, history, sort, filters — pure, no I/O) | partly (`_STATUS_MAP`, `normalize_parcel`) |
-| `coordinator.py` (fetch, cache, event firing) | mostly not |
-| `config_flow.py` | partly (code validation) |
-| `sensor.py` / `button.py` / `calendar.py` / `device_trigger.py` | no |
-| `diagnostics.py` | partly (`TO_REDACT`) |
-| `services.py` (`track_parcel` / `untrack_parcel`, account-less only) | **yes** (optional `market` field, multi-hub disambiguation — see "Carrier-specific notes" above) |
-
-`parcels.py` is deliberately free of I/O and HA objects so the per-carrier part
-stays unit-testable without Home Assistant. Config: `ConfigEntry.runtime_data`
-(typed, no `hass.data`), `PARALLEL_UPDATES = 0`, coordinator takes
-`config_entry=entry`. `aiohttp.ClientError` is caught **per parcel** in the gather
-loop (one bad parcel doesn't fail the poll) but **not** around the whole update
-(the coordinator wraps that). Entities: `has_entity_name` + `translation_key`,
-`icons.json`, translated units, `_attr_attribution`, `_unrecorded_attributes` on
-anything with a parcel list or `raw`. Over-redact diagnostics — they get pasted
-into public issues.
+*Module layout* — `services.py` takes an optional `market` field for multi-hub
+disambiguation (see *Carrier-specific notes*).
 
 ## Running tests
 
