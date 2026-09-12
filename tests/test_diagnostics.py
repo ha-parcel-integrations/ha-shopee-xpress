@@ -18,10 +18,15 @@ async def test_diagnostics_redacts_and_counts(hass):
     )
     entry.runtime_data.coordinator.data = [incoming_parcel]
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
-    assert result["counts"] == {"incoming_active": 1, "delivered": 0}
+    assert result["counts"] == {
+        "incoming_active": 1,
+        "delivered": 0,
+        "skipped_from_fetch": 0,
+    }
     # the user's own registered tracking code is redacted in entry_options...
     assert result["entry_options"]["parcels"][0]["tracking_code"] == "**REDACTED**"
     # market is not sensitive and survives, or diagnostics lose all context
@@ -49,6 +54,7 @@ async def test_diagnostics_redacts_raw_status_which_can_embed_a_name(hass):
     assert parcel["raw_status"] is not None  # sanity: there is something to redact
     entry.runtime_data.coordinator.data = []
     entry.runtime_data.coordinator.delivered = [parcel]
+    entry.runtime_data.coordinator.delivered_codes = {VN_CODE}
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
@@ -76,6 +82,7 @@ async def test_diagnostics_redacts_product_id_but_not_order_type_or_has_epod(has
     parcel = normalize_parcel(raw, market="MY")
     entry.runtime_data.coordinator.data = [parcel]
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
@@ -89,8 +96,13 @@ async def test_diagnostics_counts_reflect_empty_lists(hass):
     entry.options = {"parcels": [], "market": "MY"}
     entry.runtime_data.coordinator.data = []
     entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
 
     result = await async_get_config_entry_diagnostics(hass, entry)
-    assert result["counts"] == {"incoming_active": 0, "delivered": 0}
+    assert result["counts"] == {
+        "incoming_active": 0,
+        "delivered": 0,
+        "skipped_from_fetch": 0,
+    }
     assert result["incoming"] == []
     assert result["delivered"] == []
