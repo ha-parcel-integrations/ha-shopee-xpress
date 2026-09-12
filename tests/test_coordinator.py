@@ -57,7 +57,7 @@ def _entry_with(parcels: list[dict], *, market: str = "MY") -> MockConfigEntry:
 
 
 # ---------------------------------------------------------------------------
-# Dynamic polling (dynamic-polling.md Section 2.1, barcode-based) — pure
+# Dynamic polling (barcode-based) — pure
 # helpers
 # ---------------------------------------------------------------------------
 
