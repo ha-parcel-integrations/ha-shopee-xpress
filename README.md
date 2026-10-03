@@ -7,10 +7,8 @@
 
 > 💬 Questions or feedback? Join the discussion on the [Home Assistant community](https://community.home-assistant.io/t/packages-postnl-dhl-nl-dpd-and-gls-parcel-integration/112433/).
 
-> ⚠️ **Not yet verified against a real parcel from this integration.** The
-> status mapping is built from real captured responses in six markets, and
-> the endpoint has been re-probed from outside Home Assistant — but nobody
-> has run this integration itself against a live parcel yet. Expect the
+> ⚠️ **Pre-1.0 release.** Nobody has run this integration against a live
+> parcel yet. Expect the
 > occasional `unknown` status or missing field until that happens; please
 > [open an issue](https://github.com/ha-parcel-integrations/ha-shopee-xpress/issues/new)
 > if you hit one.
