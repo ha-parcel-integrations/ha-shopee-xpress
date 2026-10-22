@@ -34,7 +34,7 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Shopee Xpress from a config entry."""
     market = entry.options.get(CONF_MARKET)
-    market_config = MARKETS.get(market)
+    market_config = MARKETS.get(market) if market is not None else None
     if market_config is None:
         # A market removed from MARKETS (or a corrupted entry) leaves this
         # hub with no host to poll. Not a transient condition retrying would

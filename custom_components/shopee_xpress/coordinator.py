@@ -127,6 +127,8 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
     (not-yet-delivered) parcels, ``self.delivered`` the rest.
     """
 
+    config_entry: ConfigEntry
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -222,7 +224,7 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
 
     async def _async_update_data(self) -> list[dict]:
         """Fetch every tracked parcel and split into active vs delivered."""
-        market = self.config_entry.options.get(CONF_MARKET)
+        market = self.config_entry.options.get(CONF_MARKET, "")
         codes = self._tracked()
 
         # Drop cache entries for parcels the user no longer follows, so the
