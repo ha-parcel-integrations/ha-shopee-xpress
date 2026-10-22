@@ -82,7 +82,11 @@ if you can help test one.
 
 1. Open HACS and search for **Shopee Xpress**
 2. Install it
-3. Restart Home Assistant
+3. Restart Home Assistant if HACS asks you to
+
+Or click the button below to open it directly in HACS:
+
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-parcel-integrations&repository=ha-shopee-xpress&category=integration)
 
 ### Manual
 
@@ -90,7 +94,9 @@ Copy `custom_components/shopee_xpress` into your `config/custom_components/` fol
 
 ## Configuration
 
-Add the integration via **Settings → Devices & Services → Add Integration → Shopee Xpress**. Setup asks for one thing — the **market** this hub is for, since Shopee Xpress runs a separate service per market and a tracking code from one does not resolve on another's. The hub is created immediately; there's nothing else to fill in.
+[![Open your Home Assistant instance and start setting up this integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=shopee_xpress)
+
+Or set it up by hand: add the integration via **Settings → Devices & Services → Add Integration → Shopee Xpress**. Setup asks for one thing — the **market** this hub is for, since Shopee Xpress runs a separate service per market and a tracking code from one does not resolve on another's. The hub is created immediately; there's nothing else to fill in.
 
 Add parcels afterwards via the integration's **Configure** dialog, the
 [`shopee_xpress.track_parcel`](#services) service, or a [dashboard
