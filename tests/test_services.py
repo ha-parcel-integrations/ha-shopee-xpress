@@ -1,8 +1,9 @@
 """Tests for the Shopee Xpress services (track_parcel / untrack_parcel)."""
+
 from unittest.mock import AsyncMock, patch
 
-import pytest
 from homeassistant.exceptions import ServiceValidationError
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.shopee_xpress.const import (
@@ -18,7 +19,9 @@ from .payloads import MY_CODE, my_data
 _SAMPLE = my_data()
 
 
-async def _setup(hass, parcels: list[dict] | None = None, *, market: str = "MY") -> MockConfigEntry:
+async def _setup(
+    hass, parcels: list[dict] | None = None, *, market: str = "MY"
+) -> MockConfigEntry:
     entry = MockConfigEntry(
         domain=DOMAIN,
         options={CONF_MARKET: market, CONF_PARCELS: parcels or []},
@@ -65,9 +68,7 @@ async def test_track_parcel_normalizes_code(hass):
         )
         await hass.async_block_till_done()
 
-    assert entry.options[CONF_PARCELS] == [
-        {CONF_TRACKING_CODE: "TH000000000000"}
-    ]
+    assert entry.options[CONF_PARCELS] == [{CONF_TRACKING_CODE: "TH000000000000"}]
 
 
 async def test_track_parcel_never_rejects_unrecognised_shape(hass):
@@ -154,8 +155,12 @@ async def test_track_parcel_no_entries_raises(hass):
 
 
 async def _setup_two_hubs(hass) -> tuple[MockConfigEntry, MockConfigEntry]:
-    entry_my = MockConfigEntry(domain=DOMAIN, options={CONF_MARKET: "MY", CONF_PARCELS: []})
-    entry_th = MockConfigEntry(domain=DOMAIN, options={CONF_MARKET: "TH", CONF_PARCELS: []})
+    entry_my = MockConfigEntry(
+        domain=DOMAIN, options={CONF_MARKET: "MY", CONF_PARCELS: []}
+    )
+    entry_th = MockConfigEntry(
+        domain=DOMAIN, options={CONF_MARKET: "TH", CONF_PARCELS: []}
+    )
     entry_my.add_to_hass(hass)
     entry_th.add_to_hass(hass)
     with patch(
@@ -207,10 +212,18 @@ async def test_track_parcel_unknown_market_raises(hass):
 async def test_untrack_parcel_removes_from_every_hub_that_tracks_it(hass):
     """untrack has no market argument — it sweeps every hub, by design."""
     entry_my = MockConfigEntry(
-        domain=DOMAIN, options={CONF_MARKET: "MY", CONF_PARCELS: [{CONF_TRACKING_CODE: "DUPE000000001"}]}
+        domain=DOMAIN,
+        options={
+            CONF_MARKET: "MY",
+            CONF_PARCELS: [{CONF_TRACKING_CODE: "DUPE000000001"}],
+        },
     )
     entry_th = MockConfigEntry(
-        domain=DOMAIN, options={CONF_MARKET: "TH", CONF_PARCELS: [{CONF_TRACKING_CODE: "DUPE000000001"}]}
+        domain=DOMAIN,
+        options={
+            CONF_MARKET: "TH",
+            CONF_PARCELS: [{CONF_TRACKING_CODE: "DUPE000000001"}],
+        },
     )
     entry_my.add_to_hass(hass)
     entry_th.add_to_hass(hass)

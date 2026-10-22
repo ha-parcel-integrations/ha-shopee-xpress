@@ -23,11 +23,12 @@ The status vocabulary is not fully known — five of an unknown number of
 Every place that matters logs the first unrecognised value once, via
 :func:`_warn_once`, rather than guessing or crashing.
 """
+
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 import logging
 import re
-from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -94,8 +95,9 @@ def _warn_once(key: str, message: str, *args: Any) -> None:
     if key in _warned:
         return
     _warned.add(key)
+    message += "\n  Please report it — open an issue with this line: %s"
     _LOGGER.warning(
-        message + "\n  Please report it — open an issue with this line: %s",
+        message,
         *args,
         NEW_ISSUE_URL,
     )
@@ -232,9 +234,7 @@ def _check_group_names(order_info: dict[str, Any]) -> None:
         )
 
 
-def _check_delivered_cross_check(
-    delivered: bool, order_info: dict[str, Any]
-) -> None:
+def _check_delivered_cross_check(delivered: bool, order_info: dict[str, Any]) -> None:
     """Log once when the milestone-derived delivered flag disagrees.
 
     Compared against the carrier's own ``tracking_code_group_name`` — a
@@ -320,7 +320,7 @@ def _epoch_seconds_to_iso(value: Any, *, field: str) -> str | None:
         if not isinstance(value, (int, float)):
             return None
     try:
-        return datetime.fromtimestamp(value, tz=timezone.utc).isoformat()
+        return datetime.fromtimestamp(value, tz=UTC).isoformat()
     except (OverflowError, OSError, ValueError):
         return None
 
@@ -330,11 +330,11 @@ def parse_iso(value: str | None) -> datetime | None:
     if not value:
         return None
     try:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(str(value))
     except ValueError:
         return None
     if parsed.tzinfo is None:
-        parsed = parsed.replace(tzinfo=timezone.utc)
+        parsed = parsed.replace(tzinfo=UTC)
     return parsed
 
 
@@ -403,13 +403,15 @@ def build_history(
     for record in chronological:
         if not isinstance(record, dict) or record.get("display_flag") != 1:
             continue
-        timestamp = _epoch_seconds_to_iso(record.get("actual_time"), field="actual_time")
+        timestamp = _epoch_seconds_to_iso(
+            record.get("actual_time"), field="actual_time"
+        )
         if timestamp is None:
             continue
         parsed = parse_iso(timestamp)
         entries.append(
             (
-                parsed or datetime.min.replace(tzinfo=timezone.utc),
+                parsed or datetime.min.replace(tzinfo=UTC),
                 {
                     "timestamp": timestamp,
                     "status": map_parcel_status(record),
@@ -507,7 +509,9 @@ def normalize_parcel(
         "history": build_history(records) if include_history else None,
         "raw": {
             "tracking_code_group_name": order_info.get("tracking_code_group_name"),
-            "tracking_code_subgroup_name": order_info.get("tracking_code_subgroup_name"),
+            "tracking_code_subgroup_name": order_info.get(
+                "tracking_code_subgroup_name"
+            ),
             "milestone_code": newest.get("milestone_code"),
             "issue_type": newest.get("issue_type"),
             "reason_code": newest.get("reason_code"),
@@ -563,14 +567,12 @@ def apply_delivered_filter(parcels: list[dict], entry: ConfigEntry) -> list[dict
     shows.
     """
     options = entry.options
-    filter_type = options.get(
-        CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE
-    )
+    filter_type = options.get(CONF_DELIVERED_FILTER_TYPE, DEFAULT_DELIVERED_FILTER_TYPE)
     amount = int(
         options.get(CONF_DELIVERED_FILTER_AMOUNT, DEFAULT_DELIVERED_FILTER_AMOUNT)
     )
     if filter_type == "days":
-        cutoff = datetime.now(timezone.utc) - timedelta(days=amount)
+        cutoff = datetime.now(UTC) - timedelta(days=amount)
         return [
             parcel
             for parcel in parcels

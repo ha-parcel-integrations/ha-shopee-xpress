@@ -6,6 +6,7 @@ idea from an earlier revision was cut, not relocated). Adding a tracking code
 happens entirely in the options flow, and is likewise a plain add with no
 fetch.
 """
+
 import logging
 
 import pytest
@@ -50,15 +51,15 @@ def test_normalize_tracking_code_strips_and_uppercases():
 @pytest.mark.parametrize(
     "code",
     [
-        "BR000000000000Y",   # 2 letters + 12 digits + 1 letter
-        "MY000000000000",    # 2 letters + 12 digits
-        "TH000000000000",    # 2 letters + 12 digits
-        "SPEPH000000000000", # 5 letters + 12 digits (Philippines)
-        "SPXID000000000000", # 5 letters + 12 digits (Indonesia)
-        "SPXVN00000000000C", # 5 letters + 11 digits + 1 letter (Vietnam) —
-                              # the shape that broke the regex twice already;
-                              # a regression test for that history.
-        "123456789",          # pure-digit order/client id — first-class input
+        "BR000000000000Y",  # 2 letters + 12 digits + 1 letter
+        "MY000000000000",  # 2 letters + 12 digits
+        "TH000000000000",  # 2 letters + 12 digits
+        "SPEPH000000000000",  # 5 letters + 12 digits (Philippines)
+        "SPXID000000000000",  # 5 letters + 12 digits (Indonesia)
+        "SPXVN00000000000C",  # 5 letters + 11 digits + 1 letter (Vietnam) —
+        # the shape that broke the regex twice already;
+        # a regression test for that history.
+        "123456789",  # pure-digit order/client id — first-class input
     ],
 )
 def test_valid_tracking_code_accepts_every_captured_shape(code):
@@ -105,7 +106,9 @@ async def test_sorted_market_options_unshipped_locale_falls_back_to_english(hass
     assert await _sorted_market_options(hass) == ["br", "id", "my", "ph", "th", "vn"]
 
 
-async def test_sorted_market_options_falls_back_when_lookup_is_truly_empty(hass, monkeypatch):
+async def test_sorted_market_options_falls_back_when_lookup_is_truly_empty(
+    hass, monkeypatch
+):
     """HA's own translation loader already substitutes English for a locale
     this repo doesn't ship (confirmed against the real loader — see
     ``test_sorted_market_options_unshipped_locale_falls_back_to_english``),
@@ -170,7 +173,9 @@ async def test_user_flow_stores_market_upper_cased(hass):
 
 async def test_second_hub_for_the_same_market_is_allowed(hass):
     """A deliberate maintainer call: not technically enforced as one-per-market."""
-    MockConfigEntry(domain=DOMAIN, options={CONF_MARKET: "MY", CONF_PARCELS: []}).add_to_hass(hass)
+    MockConfigEntry(
+        domain=DOMAIN, options={CONF_MARKET: "MY", CONF_PARCELS: []}
+    ).add_to_hass(hass)
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": "user"}
@@ -199,7 +204,9 @@ async def test_hubs_for_different_markets_are_independent(hass):
         result["flow_id"], {CONF_MARKET: "vn"}
     )
 
-    markets = {e.options[CONF_MARKET] for e in hass.config_entries.async_entries(DOMAIN)}
+    markets = {
+        e.options[CONF_MARKET] for e in hass.config_entries.async_entries(DOMAIN)
+    }
     assert markets == {"BR", "VN"}
 
 
@@ -217,8 +224,12 @@ def _hub(parcels: list[dict], *, market: str = "MY") -> MockConfigEntry:
 
 
 def _init_input(
-    *, add="", remove=None, history=False,
-    filter_type="days", amount=7,
+    *,
+    add="",
+    remove=None,
+    history=False,
+    filter_type="days",
+    amount=7,
 ) -> dict:
     """Build the sectioned options-form submission."""
     parcels: dict = {"add": add}
@@ -246,7 +257,9 @@ async def _open_options_step(hass, entry, step_id: str):
 
 async def test_options_parcel_list_can_be_cleared(hass):
     """A submitted empty list removes the final manually tracked parcel."""
-    entry = MockConfigEntry(domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]})
+    entry = MockConfigEntry(
+        domain=DOMAIN, options={CONF_PARCELS: [{CONF_TRACKING_CODE: "EXAMPLE111111"}]}
+    )
     entry.add_to_hass(hass)
     result = await _open_options_step(hass, entry, "parcels")
     result = await hass.config_entries.options.async_configure(
@@ -263,7 +276,12 @@ async def test_options_settings_preserve_parcel_list(hass):
     entry.add_to_hass(hass)
     result = await _open_options_step(hass, entry, "settings")
     result = await hass.config_entries.options.async_configure(
-        result["flow_id"], {CONF_DELIVERED_FILTER_TYPE: "days", CONF_DELIVERED_FILTER_AMOUNT: 7, CONF_INCLUDE_HISTORY: False}
+        result["flow_id"],
+        {
+            CONF_DELIVERED_FILTER_TYPE: "days",
+            CONF_DELIVERED_FILTER_AMOUNT: 7,
+            CONF_INCLUDE_HISTORY: False,
+        },
     )
     assert result["type"] == "create_entry"
     assert result["data"][CONF_PARCELS] == parcels

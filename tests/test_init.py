@@ -1,10 +1,12 @@
 """Tests for Shopee Xpress setup and unload."""
+
 from unittest.mock import AsyncMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.shopee_xpress import async_unload_entry
 from custom_components.shopee_xpress.api import ShopeeXpressApiError
 from custom_components.shopee_xpress.const import (
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -15,8 +17,7 @@ from custom_components.shopee_xpress.const import (
     DOMAIN,
 )
 
-from .payloads import ID_CODE, MY_CODE, id_data
-from .payloads import my_data as _sample
+from .payloads import ID_CODE, MY_CODE, id_data, my_data as _sample
 
 OTHER_CODE = "TH000000000000"
 
@@ -67,8 +68,6 @@ async def test_setup_and_unload(hass):
 
 
 async def test_device_is_named_after_its_market(hass):
-    from homeassistant.helpers import device_registry as dr
-
     entry = _entry([{CONF_TRACKING_CODE: MY_CODE}], market="VN")
     entry.add_to_hass(hass)
     with patch(
@@ -120,7 +119,10 @@ async def test_per_parcel_sensor_spawn_and_remove(hass):
     entry.add_to_hass(hass)
 
     mock = AsyncMock(return_value=id_data())
-    with patch("custom_components.shopee_xpress.api.ShopeeXpressApiClient.async_get_parcel", new=mock):
+    with patch(
+        "custom_components.shopee_xpress.api.ShopeeXpressApiClient.async_get_parcel",
+        new=mock,
+    ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -132,7 +134,8 @@ async def test_per_parcel_sensor_spawn_and_remove(hass):
         # The next poll returns a different tracking code: the summary sensor
         # spawns a new per-parcel sensor and removes the stale one.
         hass.config_entries.async_update_entry(
-            entry, options={**entry.options, CONF_PARCELS: [{CONF_TRACKING_CODE: OTHER_CODE}]}
+            entry,
+            options={**entry.options, CONF_PARCELS: [{CONF_TRACKING_CODE: OTHER_CODE}]},
         )
         mock.return_value = id_data(OTHER_CODE)
         await entry.runtime_data.coordinator.async_request_refresh()
@@ -155,7 +158,10 @@ async def test_options_update_applies_live_without_reload(hass):
     entry.add_to_hass(hass)
 
     mock = AsyncMock(return_value=id_data())
-    with patch("custom_components.shopee_xpress.api.ShopeeXpressApiClient.async_get_parcel", new=mock):
+    with patch(
+        "custom_components.shopee_xpress.api.ShopeeXpressApiClient.async_get_parcel",
+        new=mock,
+    ):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
@@ -206,8 +212,6 @@ async def test_unload_entry_returns_false_when_platform_unload_fails(hass):
     the full config-entry state machine: HA treats a failed platform-unload
     as the entry's new (non-recoverable) FAILED_UNLOAD state, and there is no
     real coordinator/timer here to worry about leaving lingering."""
-    from custom_components.shopee_xpress import async_unload_entry
-
     entry = _entry([{CONF_TRACKING_CODE: MY_CODE}])
     entry.add_to_hass(hass)
 
@@ -249,4 +253,7 @@ async def test_stale_per_parcel_sensor_removed_on_next_setup(hass):
         assert await hass.config_entries.async_setup(entry.entry_id)
         await hass.async_block_till_done()
 
-    assert registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{ID_CODE}") is None
+    assert (
+        registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{ID_CODE}")
+        is None
+    )

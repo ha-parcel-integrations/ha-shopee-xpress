@@ -6,6 +6,7 @@ merchant-supplied free-text reference) — see the tracking-code handling in
 ``config_flow.py`` for what that means for user input. The host and
 ``language_code`` are per-market, both supplied by the caller.
 """
+
 from __future__ import annotations
 
 import logging
@@ -44,7 +45,9 @@ class ShopeeXpressApiClient:
     "the parcel does not exist".
     """
 
-    def __init__(self, session: aiohttp.ClientSession, *, host: str, language_code: str) -> None:
+    def __init__(
+        self, session: aiohttp.ClientSession, *, host: str, language_code: str
+    ) -> None:
         """Initialise the client for one market's host."""
         self._session = session
         self._host = host

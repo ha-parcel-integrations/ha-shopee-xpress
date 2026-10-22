@@ -6,8 +6,9 @@ as plain functions. Fixtures come from ``payloads.py``, itself a faithful
 (redacted) reproduction of the six real captures documented in
 ``carrier-research/api/shopee-xpress/tracking.md``.
 """
+
+from datetime import UTC, datetime, timedelta
 import logging
-from datetime import datetime, timedelta, timezone
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -73,7 +74,7 @@ def _stamped(raw: dict, code: str) -> dict:
 
 
 @pytest.mark.parametrize(
-    "code,expected",
+    ("code", "expected"),
     [
         (1, ParcelStatus.REGISTERED),
         (5, ParcelStatus.IN_TRANSIT),
@@ -133,7 +134,7 @@ def test_unmapped_milestone_code_9_also_warns(caplog):
 
 def test_parse_iso_handles_z_naive_and_garbage():
     assert parse_iso("2026-04-29T13:12:42+00:00").tzinfo is not None
-    assert parse_iso("2026-04-29T13:12:42").tzinfo == timezone.utc
+    assert parse_iso("2026-04-29T13:12:42").tzinfo == UTC
     assert parse_iso("not-a-date") is None
     assert parse_iso(None) is None
 
@@ -169,7 +170,10 @@ def test_epoch_seconds_to_iso_warns_on_non_numeric_value(caplog):
 
 
 def test_tracking_url_builds_per_market_deep_link():
-    assert _tracking_url("VN", "SPXVN00000000000C") == "https://spx.vn/track?SPXVN00000000000C"
+    assert (
+        _tracking_url("VN", "SPXVN00000000000C")
+        == "https://spx.vn/track?SPXVN00000000000C"
+    )
 
 
 def test_tracking_url_none_without_a_tracking_code():
@@ -199,14 +203,25 @@ def test_resolve_display_number_nothing_available():
 
 
 def test_describe_status_text_prefers_buyer_description():
-    rec = record("F980", "Delivered", 8, "Delivered", 1, description="internal",
-                 buyer_description="consumer facing")
+    rec = record(
+        "F980",
+        "Delivered",
+        8,
+        "Delivered",
+        1,
+        description="internal",
+        buyer_description="consumer facing",
+    )
     assert _describe_status_text(rec) == "consumer facing"
 
 
 def test_describe_status_text_falls_back_to_tracking_name():
-    rec = {"tracking_code": "F004", "tracking_name": "Courier assigned",
-           "description": "", "buyer_description": ""}
+    rec = {
+        "tracking_code": "F004",
+        "tracking_name": "Courier assigned",
+        "description": "",
+        "buyer_description": "",
+    }
     assert _describe_status_text(rec) == "Courier assigned"
 
 
@@ -235,11 +250,16 @@ def test_build_history_reverses_newest_first_to_oldest_first():
 
 def test_build_history_filters_on_display_flag_not_v2():
     """display_flag_v2 must never gate history — only display_flag does."""
-    shown = record("F600", "Out For Delivery", 6, "x", 100, display_flag=1, display_flag_v2=0)
+    shown = record(
+        "F600", "Out For Delivery", 6, "x", 100, display_flag=1, display_flag_v2=0
+    )
     hidden = record("F441", "Loaded", 5, "x", 200, display_flag=0, display_flag_v2=13)
     history = build_history([hidden, shown])
     assert len(history) == 1
-    assert history[0]["raw_status"] == "F600" or history[0]["status"] == ParcelStatus.OUT_FOR_DELIVERY
+    assert (
+        history[0]["raw_status"] == "F600"
+        or history[0]["status"] == ParcelStatus.OUT_FOR_DELIVERY
+    )
 
 
 def test_build_history_status_is_canonical_and_raw_status_is_carrier_text():
@@ -269,7 +289,9 @@ def test_build_history_does_not_deduplicate_repeated_tracking_codes_br():
     assert sum(1 for r in records if r["tracking_code"] == "F004") == 3
 
     history = build_history(records)
-    left_sorting_center = [e for e in history if e["raw_status"] == "Left Domestic Sorting Center"]
+    left_sorting_center = [
+        e for e in history if e["raw_status"] == "Left Domestic Sorting Center"
+    ]
     assert len(left_sorting_center) == 2
     assert len({e["timestamp"] for e in left_sorting_center}) == 2
 
@@ -281,7 +303,9 @@ def test_build_history_keeps_both_philippine_sorting_centre_legs():
     line_haul_end = [e for e in history if e["raw_status"] == "Domestic Line Haul End"]
     assert len(line_haul_end) == 2
     assert len({e["timestamp"] for e in line_haul_end}) == 2
-    first_mile_hub = [e for e in history if e["raw_status"] == "Enter Domestic First Mile Hub"]
+    first_mile_hub = [
+        e for e in history if e["raw_status"] == "Enter Domestic First Mile Hub"
+    ]
     assert len(first_mile_hub) == 2
 
 
@@ -306,8 +330,12 @@ def test_build_history_caps_at_20_and_drops_the_oldest_vietnamese_event():
 
 
 def test_build_history_stable_sort_keeps_ties_in_original_order():
-    tied_a = record("F599", "Enter Last Mile Hub", 5, "In transit", 1770000000, description="first")
-    tied_b = record("F599", "Enter Last Mile Hub", 5, "In transit", 1770000000, description="second")
+    tied_a = record(
+        "F599", "Enter Last Mile Hub", 5, "In transit", 1770000000, description="first"
+    )
+    tied_b = record(
+        "F599", "Enter Last Mile Hub", 5, "In transit", 1770000000, description="second"
+    )
     # newest-first input: b then a, tied on actual_time. Reversing to
     # chronological order puts a before b, and the stable sort must keep it
     # that way rather than reordering same-second entries arbitrarily.
@@ -317,7 +345,9 @@ def test_build_history_stable_sort_keeps_ties_in_original_order():
 
 def test_build_history_handles_missing_and_malformed():
     assert build_history(None) == []
-    assert build_history([{"tracking_code": "F000", "display_flag": 1}]) == []  # no timestamp
+    assert (
+        build_history([{"tracking_code": "F000", "display_flag": 1}]) == []
+    )  # no timestamp
     assert build_history(["not-a-dict"]) == []
     assert build_history([{"display_flag": 0, "actual_time": 1}]) == []  # internal only
 
@@ -366,7 +396,9 @@ def test_capabilities_are_known_values():
 
 
 def test_capabilities_match_what_normalize_parcel_actually_returns():
-    delivered = normalize_parcel(_stamped(my_data(), MY_CODE), market="MY", include_history=True)
+    delivered = normalize_parcel(
+        _stamped(my_data(), MY_CODE), market="MY", include_history=True
+    )
     if "weight" in CAPABILITIES:
         assert delivered["weight"] is not None
     if "dimensions" in CAPABILITIES:
@@ -391,7 +423,9 @@ def test_capabilities_match_what_normalize_parcel_actually_returns():
 
 
 def test_normalize_malaysia_delivered():
-    parcel = normalize_parcel(_stamped(my_data(), MY_CODE), market="MY", include_history=True)
+    parcel = normalize_parcel(
+        _stamped(my_data(), MY_CODE), market="MY", include_history=True
+    )
     assert parcel["carrier"] == "Shopee Xpress"
     assert parcel["barcode"] == MY_CODE
     assert parcel["status"] == ParcelStatus.DELIVERED
@@ -463,7 +497,9 @@ def test_normalize_philippines_delivered_with_eta_present_but_suppressed():
 
 def test_normalize_brazil_survives_missing_order_and_parcel_and_edd_info():
     """Gate B's regression test: must not raise, must still hit the minimum."""
-    parcel = normalize_parcel(_stamped(br_data(), BR_CODE), market="BR", include_history=True)
+    parcel = normalize_parcel(
+        _stamped(br_data(), BR_CODE), market="BR", include_history=True
+    )
     assert parcel["barcode"] == BR_CODE  # falls back to the requested number
     assert parcel["status"] == ParcelStatus.DELIVERED
     assert parcel["delivered"] is True
@@ -510,12 +546,16 @@ def test_normalize_brazil_missing_blocks_logs_nothing(caplog):
 
 
 def test_normalize_indonesia_single_record_not_delivered():
-    parcel = normalize_parcel(_stamped(id_data(), ID_CODE), market="ID", include_history=True)
+    parcel = normalize_parcel(
+        _stamped(id_data(), ID_CODE), market="ID", include_history=True
+    )
     assert parcel["barcode"] == ID_CODE
     assert parcel["status"] == ParcelStatus.REGISTERED
     assert parcel["delivered"] is False
     assert parcel["delivered_at"] is None
-    assert parcel["planned_from"] is None  # no edd_info at all, despite order_info present
+    assert (
+        parcel["planned_from"] is None
+    )  # no edd_info at all, despite order_info present
     assert parcel["planned_to"] is None
     assert len(parcel["history"]) == 1
 
@@ -524,7 +564,9 @@ def test_normalize_indonesia_single_record_not_delivered():
 
 
 def test_normalize_vietnam_returning_never_delivered():
-    parcel = normalize_parcel(_stamped(vn_data(), VN_CODE), market="VN", include_history=True)
+    parcel = normalize_parcel(
+        _stamped(vn_data(), VN_CODE), market="VN", include_history=True
+    )
     assert parcel["barcode"] == VN_CODE
     assert parcel["status"] == ParcelStatus.RETURNING  # milestone_code 10
     assert parcel["delivered"] is False
@@ -538,7 +580,8 @@ def test_normalize_vietnam_exception_records_omit_keys_without_raising():
     not raise on either the ones that carry them or the ones that don't."""
     raw = vn_data()
     without_exception_fields = [
-        r for r in raw["sls_tracking_info"]["records"]
+        r
+        for r in raw["sls_tracking_info"]["records"]
         if "issue_type" not in r and "standard_reason_code" not in r
     ]
     assert len(without_exception_fields) == 23
@@ -550,7 +593,9 @@ def test_normalize_vietnam_f650_maps_to_out_for_delivery_not_problem():
     """Assert §2's decision explicitly, so a later refactor can't silently
     flip it: a failed delivery attempt stays on its happy-path milestone."""
     raw = vn_data()
-    f650 = next(r for r in raw["sls_tracking_info"]["records"] if r["tracking_code"] == "F650")
+    f650 = next(
+        r for r in raw["sls_tracking_info"]["records"] if r["tracking_code"] == "F650"
+    )
     assert f650["milestone_code"] == 6
     assert map_parcel_status(f650) == ParcelStatus.OUT_FOR_DELIVERY
     assert map_parcel_status(f650) != ParcelStatus.PROBLEM
@@ -558,7 +603,9 @@ def test_normalize_vietnam_f650_maps_to_out_for_delivery_not_problem():
 
 def test_normalize_vietnam_f050_maps_to_registered_not_problem():
     raw = vn_data()
-    for f050 in (r for r in raw["sls_tracking_info"]["records"] if r["tracking_code"] == "F050"):
+    for f050 in (
+        r for r in raw["sls_tracking_info"]["records"] if r["tracking_code"] == "F050"
+    ):
         assert f050["milestone_code"] == 1
         assert map_parcel_status(f050) == ParcelStatus.REGISTERED
 
@@ -586,11 +633,17 @@ def test_normalize_vietnam_missing_edd_info_logs_nothing(caplog):
 def test_normalize_vietnam_history_preserves_triple_f599_and_both_f050():
     raw = vn_data()
     history = build_history(raw["sls_tracking_info"]["records"])
-    last_mile = [e for e in history if e["raw_status"] and "28-NDH Nam Dinh Hub" in e["raw_status"]]
+    last_mile = [
+        e
+        for e in history
+        if e["raw_status"] and "28-NDH Nam Dinh Hub" in e["raw_status"]
+    ]
     assert len(last_mile) >= 2  # F599 entries with that hub in their text
     reschedules = [
-        e for e in history
-        if e["raw_status"] and e["raw_status"].startswith("Pickup attempt was unsuccessful")
+        e
+        for e in history
+        if e["raw_status"]
+        and e["raw_status"].startswith("Pickup attempt was unsuccessful")
     ]
     assert len(reschedules) == 2
 
@@ -801,7 +854,7 @@ def _entry(filter_type: str, amount: int) -> MockConfigEntry:
 
 
 def _delivered_pair() -> list[dict]:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     return [
         {"barcode": "RECENT", "delivered_at": (now - timedelta(days=1)).isoformat()},
         {"barcode": "OLD", "delivered_at": (now - timedelta(days=30)).isoformat()},

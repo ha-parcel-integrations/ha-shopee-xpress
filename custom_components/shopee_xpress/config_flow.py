@@ -19,7 +19,6 @@ import logging
 import re
 from typing import Any
 
-import voluptuous as vol
 from homeassistant.config_entries import (
     ConfigEntry,
     ConfigFlow,
@@ -29,6 +28,7 @@ from homeassistant.config_entries import (
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import selector
 from homeassistant.helpers.translation import async_get_translations
+import voluptuous as vol
 
 from .const import (
     CONF_DELIVERED_FILTER_AMOUNT,

@@ -1,4 +1,5 @@
 """Tests for Shopee Xpress diagnostics."""
+
 from unittest.mock import MagicMock
 
 from custom_components.shopee_xpress.diagnostics import (
@@ -65,7 +66,8 @@ async def test_diagnostics_redacts_raw_status_which_can_embed_a_name(hass):
             assert event["raw_status"] == "**REDACTED**"
     # the underlying raw exception description field is redacted too
     assert result["delivered"][0]["raw"]["standard_reason_description"] in (
-        None, "**REDACTED**"
+        None,
+        "**REDACTED**",
     )
 
 

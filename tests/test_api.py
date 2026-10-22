@@ -5,6 +5,7 @@ No "not found" branch here on purpose: the real failure envelope
 genuinely broken backend, so every non-success response raises — the client
 has no concept of "this code does not exist".
 """
+
 import json
 from unittest.mock import AsyncMock, MagicMock
 

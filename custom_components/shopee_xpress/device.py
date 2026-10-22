@@ -3,6 +3,7 @@
 One place, because sensors, the button and the calendar must all land on the
 *same* device entry.
 """
+
 from __future__ import annotations
 
 from homeassistant.config_entries import ConfigEntry

@@ -1,4 +1,5 @@
 """Constants for the Shopee Xpress parcel tracker integration."""
+
 from enum import StrEnum
 
 from homeassistant.const import Platform
@@ -16,14 +17,14 @@ class ParcelStatus(StrEnum):
     roughly the order a parcel moves through.
     """
 
-    REGISTERED = "registered"               # Sender announced the parcel; not handed over yet
-    IN_TRANSIT = "in_transit"               # In the carrier's network
-    OUT_FOR_DELIVERY = "out_for_delivery"   # On a delivery vehicle today
-    AT_PICKUP_POINT = "at_pickup_point"     # Ready to collect at a pickup location
-    DELIVERED = "delivered"                 # Handed over
-    RETURNING = "returning"                 # Failed delivery, going back to sender
-    PROBLEM = "problem"                     # Carrier reports an exception/issue
-    UNKNOWN = "unknown"                     # Raw status we have not mapped yet
+    REGISTERED = "registered"  # Sender announced the parcel; not handed over yet
+    IN_TRANSIT = "in_transit"  # In the carrier's network
+    OUT_FOR_DELIVERY = "out_for_delivery"  # On a delivery vehicle today
+    AT_PICKUP_POINT = "at_pickup_point"  # Ready to collect at a pickup location
+    DELIVERED = "delivered"  # Handed over
+    RETURNING = "returning"  # Failed delivery, going back to sender
+    PROBLEM = "problem"  # Carrier reports an exception/issue
+    UNKNOWN = "unknown"  # Raw status we have not mapped yet
 
 
 PLATFORMS = [Platform.BUTTON, Platform.CALENDAR, Platform.SENSOR]
@@ -105,8 +106,10 @@ OPTIONAL_DATA_BLOCKS = frozenset(
 # functional non-gap, every read already defensive), these are keys arriving
 # for the *first* time, so they're mapped into raw below rather than silently
 # widened into this set with no user-facing change.
-KNOWN_DATA_KEYS = ALWAYS_PRESENT_BLOCKS | OPTIONAL_DATA_BLOCKS | frozenset(
-    {"is_instant_order", "is_shopee_market_order", "has_epod"}
+KNOWN_DATA_KEYS = (
+    ALWAYS_PRESENT_BLOCKS
+    | OPTIONAL_DATA_BLOCKS
+    | frozenset({"is_instant_order", "is_shopee_market_order", "has_epod"})
 )
 KNOWN_RECORD_KEYS = frozenset(
     {
@@ -144,9 +147,32 @@ KNOWN_MILESTONE_CODES = frozenset({1, 5, 6, 8, 10})
 # first unrecognised value, never reject it, never map ParcelStatus from it.
 KNOWN_TRACKING_CODES = frozenset(
     {
-        "A000", "F000", "F004", "F050", "F098", "F100", "F430", "F440", "F441",
-        "F445", "F450", "F510", "F515", "F540", "F541", "F580", "F598", "F599",
-        "F600", "F650", "F671", "F673", "F677", "F680", "F980", "F999",
+        "A000",
+        "F000",
+        "F004",
+        "F050",
+        "F098",
+        "F100",
+        "F430",
+        "F440",
+        "F441",
+        "F445",
+        "F450",
+        "F510",
+        "F515",
+        "F540",
+        "F541",
+        "F580",
+        "F598",
+        "F599",
+        "F600",
+        "F650",
+        "F671",
+        "F673",
+        "F677",
+        "F680",
+        "F980",
+        "F999",
     }
 )
 

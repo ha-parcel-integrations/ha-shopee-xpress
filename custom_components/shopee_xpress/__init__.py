@@ -1,8 +1,9 @@
 """Shopee Xpress parcel tracker custom component for Home Assistant."""
+
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass
+import logging
 
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -28,7 +29,9 @@ class ShopeeXpressData:
 type ShopeeXpressConfigEntry = ConfigEntry[ShopeeXpressData]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ShopeeXpressConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ShopeeXpressConfigEntry
+) -> bool:
     """Set up Shopee Xpress from a config entry."""
     market = entry.options.get(CONF_MARKET)
     market_config = MARKETS.get(market)
@@ -83,7 +86,9 @@ async def _async_options_updated(
     await coordinator.async_request_refresh()
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ShopeeXpressConfigEntry) -> bool:
+async def async_unload_entry(
+    hass: HomeAssistant, entry: ShopeeXpressConfigEntry
+) -> bool:
     """Unload the Shopee Xpress config entry."""
     if not await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         return False

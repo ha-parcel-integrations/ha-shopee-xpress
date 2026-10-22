@@ -6,13 +6,14 @@ here never returns ``None`` — it either returns a `data` dict or raises
 :class:`ShopeeXpressApiError` (see ``test_api.py``); the coordinator has no
 "not found" placeholder branch to test as a result.
 """
+
 import asyncio
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock
 
-import pytest
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import UpdateFailed
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.shopee_xpress.api import ShopeeXpressApiError
@@ -130,7 +131,10 @@ def test_tier_is_mid_before_lookahead_of_planned_from():
 
 
 def test_next_update_interval_is_none_for_none_tier():
-    assert _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1") is None
+    assert (
+        _next_update_interval(datetime(2026, 1, 1, 12, tzinfo=UTC), None, "entry-1")
+        is None
+    )
 
 
 def test_daytime_candidate_outside_window_is_tier_plus_stagger():
@@ -393,9 +397,7 @@ async def test_update_with_no_tracked_parcels_stamps_success(hass):
 
 async def test_delivered_code_skipped_from_fetch(hass):
     """A delivered code stops being fetched from the next cycle on."""
-    entry = _entry_with(
-        [{CONF_TRACKING_CODE: ID_CODE}, {CONF_TRACKING_CODE: MY_CODE}]
-    )
+    entry = _entry_with([{CONF_TRACKING_CODE: ID_CODE}, {CONF_TRACKING_CODE: MY_CODE}])
     entry.add_to_hass(hass)
     client = AsyncMock()
     client.async_get_parcel.side_effect = lambda code: (
@@ -471,13 +473,13 @@ async def test_event_carries_device_id(hass):
     coordinator = ShopeeXpressCoordinator(hass, client, entry)
 
     events = []
-    hass.bus.async_listen(
-        f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e)
-    )
+    hass.bus.async_listen(f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e))
 
     client.async_get_parcel.return_value = id_data()  # registered
     await coordinator._async_update_data()
-    client.async_get_parcel.return_value = vn_data(ID_CODE)  # returning: a status change
+    client.async_get_parcel.return_value = vn_data(
+        ID_CODE
+    )  # returning: a status change
     await coordinator._async_update_data()
     # A third round exercises the cached-id fast path (no second registry
     # lookup) — vn_data is already terminal so nothing new fires, but
@@ -500,7 +502,9 @@ async def test_fire_change_events_skips_parcels_without_a_barcode(hass):
     events = []
     hass.bus.async_listen(f"{DOMAIN}_parcel_registered", lambda e: events.append(e))
 
-    coordinator._fire_change_events([{"barcode": None, "status": ParcelStatus.REGISTERED}])
+    coordinator._fire_change_events(
+        [{"barcode": None, "status": ParcelStatus.REGISTERED}]
+    )
     await hass.async_block_till_done()
 
     assert events == []
@@ -513,9 +517,7 @@ async def test_fires_status_changed_event(hass):
     coordinator = ShopeeXpressCoordinator(hass, client, entry)
 
     events = []
-    hass.bus.async_listen(
-        f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e)
-    )
+    hass.bus.async_listen(f"{DOMAIN}_parcel_status_changed", lambda e: events.append(e))
 
     client.async_get_parcel.return_value = id_data()  # registered, single record
     await coordinator._async_update_data()  # first refresh: suppressed
@@ -545,8 +547,12 @@ async def test_delivery_fires_delivered_event_and_not_status_changed(hass):
     )
 
     in_transit = my_data(MY_CODE)
-    in_transit["sls_tracking_info"]["records"] = in_transit["sls_tracking_info"]["records"][1:]
-    client.async_get_parcel.return_value = in_transit  # newest now F600 (out for delivery)
+    in_transit["sls_tracking_info"]["records"] = in_transit["sls_tracking_info"][
+        "records"
+    ][1:]
+    client.async_get_parcel.return_value = (
+        in_transit  # newest now F600 (out for delivery)
+    )
     await coordinator._async_update_data()
     client.async_get_parcel.return_value = my_data(MY_CODE)  # delivered
     await coordinator._async_update_data()
@@ -612,9 +618,7 @@ async def test_fires_registered_event_for_new_parcel(hass):
             ],
         },
     )
-    client.async_get_parcel.side_effect = lambda code: (
-        id_data(code) if code == ID_CODE else id_data(code)
-    )
+    client.async_get_parcel.side_effect = id_data
     await coordinator._async_update_data()
     await hass.async_block_till_done()
 
@@ -634,7 +638,9 @@ async def test_fires_delivery_time_changed_event(hass):
     )
 
     active = my_data(MY_CODE)
-    active["sls_tracking_info"]["records"] = active["sls_tracking_info"]["records"][1:]  # not delivered
+    active["sls_tracking_info"]["records"] = active["sls_tracking_info"]["records"][
+        1:
+    ]  # not delivered
     client.async_get_parcel.return_value = active
     await coordinator._async_update_data()  # first refresh: suppressed
 
@@ -668,7 +674,9 @@ async def test_losing_the_eta_is_silent(hass):
     await coordinator._async_update_data()
 
     dropped = my_data(MY_CODE)
-    dropped["sls_tracking_info"]["records"] = dropped["sls_tracking_info"]["records"][1:]
+    dropped["sls_tracking_info"]["records"] = dropped["sls_tracking_info"]["records"][
+        1:
+    ]
     del dropped["edd_info"]
     client.async_get_parcel.return_value = dropped
     await coordinator._async_update_data()

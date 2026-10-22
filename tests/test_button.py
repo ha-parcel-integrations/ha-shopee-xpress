@@ -1,4 +1,5 @@
 """Tests for the Shopee Xpress refresh button."""
+
 from unittest.mock import AsyncMock, MagicMock
 
 from custom_components.shopee_xpress.button import ShopeeXpressRefreshButton
