@@ -228,7 +228,7 @@ logger:
 
 - **A parcel shows `unknown`**: either it hasn't been scanned yet, or its newest event carries a `milestone_code` this integration doesn't map yet (rare — please report it, see below).
 - **A per-parcel sensor's `raw.resolved_number` doesn't match the code I typed**: Shopee Xpress's lookup also matches other sellers' free-text order references, so a very short or mistyped tracking code can resolve to a real stranger's parcel. Nothing is checked when you add a code — check `raw.resolved_number` (and `raw.resolved_number_is_internal`) on that parcel's sensor once it's been polled, and double-check the code you entered if it looks wrong.
-- **A log line starts with "Unrecognised Shopee Xpress ..."**: this carrier's status and reason-code vocabularies are only partially confirmed. Please [open an issue](https://github.com/ha-parcel-integrations/ha-shopee-xpress/issues/new) with the logged line so the mapping can be extended.
+- **A log line starts with "Unrecognised Shopee Xpress ..."**: this carrier's status and reason-code vocabularies are only partially confirmed. Please [open an issue](https://github.com/ha-parcel-integrations/ha-shopee-xpress/issues/new?template=unrecognised_status.yml) with the logged line so the mapping can be extended.
 
 ## Related integrations
 
