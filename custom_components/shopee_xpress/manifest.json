@@ -1,6 +1,7 @@
 {
   "domain": "shopee_xpress",
   "name": "Shopee Xpress",
+  "categories": ["productivity_information"],
   "codeowners": [
     "@peter-mdf"
   ],
