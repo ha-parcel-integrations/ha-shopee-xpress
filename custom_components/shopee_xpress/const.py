@@ -45,16 +45,16 @@ KNOWN_CAPABILITIES = frozenset(
 # url is never in the payload either, but — unlike those — is constructed
 # rather than read: see TRACKING_URL below.
 # Taiwan runs on the fleet feed, which carries no delivery estimate. Keys are
-# the market picker's English names, in its order.
-_ORDER_INFO_CAPABILITIES = frozenset({"delivery_window", "history", "url"})
+# the market picker's English names, in its order. Written out per row: the
+# docs site reads these literally.
 CAPABILITIES_BY_VARIANT = {
-    "Brazil": _ORDER_INFO_CAPABILITIES,
-    "Indonesia": _ORDER_INFO_CAPABILITIES,
-    "Malaysia": _ORDER_INFO_CAPABILITIES,
-    "Philippines": _ORDER_INFO_CAPABILITIES,
+    "Brazil": frozenset({"delivery_window", "history", "url"}),
+    "Indonesia": frozenset({"delivery_window", "history", "url"}),
+    "Malaysia": frozenset({"delivery_window", "history", "url"}),
+    "Philippines": frozenset({"delivery_window", "history", "url"}),
     "Taiwan": frozenset({"history", "url"}),
-    "Thailand": _ORDER_INFO_CAPABILITIES,
-    "Vietnam": _ORDER_INFO_CAPABILITIES,
+    "Thailand": frozenset({"delivery_window", "history", "url"}),
+    "Vietnam": frozenset({"delivery_window", "history", "url"}),
 }
 
 # One JSON GET, no auth, keyed on a query parameter that resolves against
