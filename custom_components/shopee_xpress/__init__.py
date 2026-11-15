@@ -10,8 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
-from .api import ShopeeXpressApiClient
-from .const import CONF_MARKET, DOMAIN, MARKETS, PLATFORMS
+from .api import ShopeeXpressApiClient, ShopeeXpressFleetClient
+from .const import CONF_MARKET, DOMAIN, FLEET_MARKETS, MARKETS, PLATFORMS
 from .coordinator import ShopeeXpressCoordinator
 from .services import async_setup_services, async_unload_services
 
@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 class ShopeeXpressData:
     """Runtime data attached to the Shopee Xpress config entry."""
 
-    client: ShopeeXpressApiClient
+    client: ShopeeXpressApiClient | ShopeeXpressFleetClient
     coordinator: ShopeeXpressCoordinator
 
 
@@ -34,21 +34,21 @@ async def async_setup_entry(
 ) -> bool:
     """Set up Shopee Xpress from a config entry."""
     market = entry.options.get(CONF_MARKET)
-    market_config = MARKETS.get(market) if market is not None else None
-    if market_config is None:
-        # A market removed from MARKETS (or a corrupted entry) leaves this
+    session = async_get_clientsession(hass)
+    client: ShopeeXpressApiClient | ShopeeXpressFleetClient
+    if market in FLEET_MARKETS:
+        client = ShopeeXpressFleetClient(session, host=FLEET_MARKETS[market])
+    elif market in MARKETS:
+        # Host and language_code are fixed for this hub's lifetime — a number
+        # from one market's host does not resolve against another's.
+        host, language_code = MARKETS[market]
+        client = ShopeeXpressApiClient(session, host=host, language_code=language_code)
+    else:
+        # A market removed from the tables (or a corrupted entry) leaves this
         # hub with no host to poll. Not a transient condition retrying would
         # fix, but ConfigEntryNotReady is still the right signal — it surfaces
         # as a clear repair prompt rather than a half-set-up entry.
         raise ConfigEntryNotReady(f"Unknown Shopee Xpress market: {market!r}")
-    host, language_code = market_config
-
-    # No auth: Shopee Xpress tracking is public, so the HA-managed session is
-    # fine. Host and language_code are fixed for this hub's lifetime — a
-    # number from one market's host does not resolve against another's.
-    client = ShopeeXpressApiClient(
-        async_get_clientsession(hass), host=host, language_code=language_code
-    )
     coordinator = ShopeeXpressCoordinator(hass, client, entry)
 
     # Fetch initial data here, before forwarding to platforms. Raising

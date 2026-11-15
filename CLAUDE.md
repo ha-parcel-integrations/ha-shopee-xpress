@@ -18,7 +18,7 @@ you act in one of these areas:
 |---|---|
 | touch entities, sensors, config/options flow, coordinator, diagnostics, translations | *Home Assistant developer docs* (its table points on to the canonical HA page — don't rely on memory) |
 | add/rename a parcel field, a `ParcelStatus`, or a bus event; change the sort/first-refresh; touch unmapped-status logging | *Parcel contract* — exact key set, units, sort, events + suppression; `test_parcels.py::test_normalize_publishes_exactly_the_canonical_keys` guards the key set |
-| change which optional field this carrier populates vs. always returns `None` | Update `const.py`'s `CAPABILITIES` in the same commit — it feeds the comparison table on the docs site, so a field that starts (or stops) coming back non-null and isn't reflected there is a wrong claim on the website, not just a stale comment |
+| change which optional field this carrier populates vs. always returns `None` | Update `const.py`'s `CAPABILITIES_BY_VARIANT` in the same commit — one row per market, because Taiwan's fleet feed has no delivery estimate. It feeds the comparison table on the docs site, so a field that starts (or stops) coming back non-null and isn't reflected there is a wrong claim on the website, not just a stale comment |
 | ship anything while below 1.0.0 (unconfirmed data) | *Pre-1.0 releases* — one-shot WARNINGs for every guessed shape/code |
 | consider "fixing" a lint/pattern the skill flags (poll interval, inline client, sync requests) | *Deliberate skill divergences* — likely intentional, don't re-flag |
 | commit, bump, tag, release, or write release notes; add a feature without a test | *Workflow / Commits / Versioning / Testing* |
@@ -53,12 +53,29 @@ richer, differentiated one. `carrier-research/shopee-xpress/shopee-xpress.md`
 records `rate_limit: unknown`, so there's no evidence a 429 path is even
 needed; revisit if that changes.
 
-**No `awaiting_pickup` sensor yet — unconfirmed, not structural.** No
-capture has ever shown a parcel collected from a pickup point
-(carrier-research's `shopee-xpress.md`); `pickup`/`pickup_point` stay
-`False`/`None` in `parcels.py`. That is "unseen so far," not "cannot
-happen" — revisit once a real parcel settles it. See
-`.github/CONVENTIONS.md`'s pickup-point convention.
+**Taiwan runs on a second transport, the fleet feed — never on
+`get_order_info`.** That route answers every Taiwanese number as missing
+(`retcode 3000`), so `FLEET_MARKETS` holds Taiwan apart from `MARKETS`,
+`__init__.py` builds a `ShopeeXpressFleetClient` for it, and
+`normalize_parcel()` hands its replies to `_normalize_fleet_parcel()`. The feed
+takes its own `sls_tracking_number` form (`api.fleet_query`) and a browser
+User-Agent; any other client is refused with a `403`. Its reply is a
+different shape from the other markets: `current_status` and
+`tracking_list[]` (`timestamp` Unix seconds, string `status` codes, Chinese
+`message`), newest first, and repeats a scan now and then (kept once).
+`retcode -1000` (unknown number) and `-1217` (a history the feed no longer
+keeps) are returned as `{}` and read as `unknown`, not raised — the one
+not-found branch this repo has. `_FLEET_STATUS_MAP` holds Taiwan's codes and
+the hub codes the same feed carries in other networks; an unmapped code falls
+back to the newest mapped scan and warns once. `receiver` is the feed's
+`recipient_name` (blank in every reply seen); `recipient_name`/`phone` are in
+`TO_REDACT`. The same feed exists in Brazil and the Philippines with the same
+shape; it is not used there (yet) — `get_order_info` answers those.
+
+**`awaiting_pickup` comes from Taiwan only.** `SP_Ready_Collection` (waiting at
+the buyer's pickup store) maps to `at_pickup_point`, so the sensor exists for
+every hub. `pickup_point` stays `None`: the store's name has not been seen in
+a reply. The order-lookup markets never reach `at_pickup_point`.
 
 **Status: manually verified against real parcels, and the test suite is
 written and green.** The payload mapping was built from maintainer-supplied
@@ -91,7 +108,8 @@ directly rather than trusting the comment.
 
 **Setup asks for the market only — one hub, immediate creation, no fetch.**
 Shopee Xpress runs one backend per country host (`spx.com.br`, `spx.co.id`,
-`spx.com.my`, `spx.ph`, `spx.co.th`, `spx.vn` — `MARKETS` in `const.py`), and a
+`spx.com.my`, `spx.ph`, `spx.co.th`, `spx.vn` — `MARKETS` in `const.py` — and
+`spx.tw` in `FLEET_MARKETS`; `ALL_MARKETS` is what the picker offers), and a
 number from one market's host does not resolve on another's, so the market has
 to be picked before anything else. `config_flow.py`'s `async_step_user`
 mirrors `ha-dragonfly`'s zero-input setup — entry created immediately, empty
@@ -172,8 +190,8 @@ does **not** derive `ParcelStatus.problem` from those fields — Option A from
 the build plan, chosen because the reason vocabulary is sampled from a single
 parcel and overriding on it risked more false positives than it fixed. The
 reason fields still reach the user through the `raw` attribute.
-`ParcelStatus.at_pickup_point` is the one canonical status this carrier has
-never shown any evidence for at all.
+The order-lookup markets never reach `ParcelStatus.at_pickup_point`; only
+Taiwan's fleet feed does.
 
 **Timestamps are epoch seconds, not milliseconds** — the one place this repo
 deviates from the template's default numeric-timestamp handling (see
@@ -245,10 +263,10 @@ not in a local `docs/api/`** — the endpoint, the `MARKETS` host/language
 table, the `milestone_code`/reason-code vocabularies and their `ParcelStatus`
 mapping, and the full annotated captures. See CONVENTIONS.md.
 
-**Translations cover four of the six supported markets, not all six — `my`
+**Translations cover five of the seven supported markets, not all seven — `my`
 and `ph` are skipped on purpose.** CONVENTIONS.md's rule is one translation
-per country-picker option, and `pt-BR`/`id`/`th`/`vi` (Brazil, Indonesia,
-Thailand, Vietnam) follow it (1.2.0). Malaysia and the Philippines don't:
+per country-picker option, and `pt-BR`/`id`/`th`/`vi`/`zh-Hant` (Brazil,
+Indonesia, Thailand, Vietnam, Taiwan) follow it. Malaysia and the Philippines don't:
 Home Assistant's own frontend has no Malay or Filipino/Tagalog interface
 language at all (confirmed against `translationMetadata.json` in
 `home-assistant/frontend`), so a `ms.json`/`tl.json` file could never be
@@ -261,8 +279,8 @@ is permanent.
 Everything not listed here follows the scaffold exactly.
 
 *Dynamic polling* — Shopee Xpress's `edd_info` block (the source of
-`planned_from`) is present for `out_for_delivery` parcels in **three of six
-markets** (Malaysia, Philippines, Thailand) and absent in the other three. When
+`planned_from`) is present for `out_for_delivery` parcels in **three of seven
+markets** (Malaysia, Philippines, Thailand) and absent in the other four. When
 absent the parcel goes straight to the hot tier with no lookahead; when present
 the ordinary hour-before-`planned_from` lookahead applies.
 

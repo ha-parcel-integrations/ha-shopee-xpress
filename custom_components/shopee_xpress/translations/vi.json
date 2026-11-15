@@ -78,6 +78,7 @@
         "id": "Indonesia",
         "my": "Malaysia",
         "ph": "Philippines",
+        "tw": "Đài Loan",
         "th": "Thái Lan",
         "vn": "Việt Nam"
       }
@@ -141,6 +142,10 @@
       },
       "next_delivery": {
         "name": "Lần giao hàng tiếp theo"
+      },
+      "awaiting_pickup": {
+        "name": "Chờ nhận hàng",
+        "unit_of_measurement": "kiện hàng"
       },
       "delivered_parcels": {
         "name": "Kiện hàng đã giao",

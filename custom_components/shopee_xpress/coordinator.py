@@ -17,7 +17,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
 
-from .api import ShopeeXpressApiClient, ShopeeXpressApiError
+from .api import ShopeeXpressApiClient, ShopeeXpressApiError, ShopeeXpressFleetClient
 from .const import (
     CONF_INCLUDE_HISTORY,
     CONF_MARKET,
@@ -132,7 +132,7 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
     def __init__(
         self,
         hass: HomeAssistant,
-        client: ShopeeXpressApiClient,
+        client: ShopeeXpressApiClient | ShopeeXpressFleetClient,
         entry: ConfigEntry,
     ) -> None:
         """Initialise the coordinator."""

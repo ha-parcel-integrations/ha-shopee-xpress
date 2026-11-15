@@ -78,6 +78,7 @@
         "id": "Indonesia",
         "my": "Malaysia",
         "ph": "Filipina",
+        "tw": "Taiwan",
         "th": "Thailand",
         "vn": "Vietnam"
       }
@@ -141,6 +142,10 @@
       },
       "next_delivery": {
         "name": "Pengiriman berikutnya"
+      },
+      "awaiting_pickup": {
+        "name": "Menunggu diambil",
+        "unit_of_measurement": "paket"
       },
       "delivered_parcels": {
         "name": "Paket terkirim",

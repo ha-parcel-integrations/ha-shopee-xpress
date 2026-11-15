@@ -38,6 +38,8 @@ from .const import (
     CONF_DELIVERED_FILTER_TYPE,
     DEFAULT_DELIVERED_FILTER_AMOUNT,
     DEFAULT_DELIVERED_FILTER_TYPE,
+    FLEET_MARKETS,
+    FLEET_TRACKING_URL,
     HISTORY_MAX_EVENTS,
     KNOWN_DATA_KEYS,
     KNOWN_GROUP_NAMES,
@@ -432,8 +434,139 @@ def _tracking_url(market: str, tracking_code: str | None) -> str | None:
     """
     if not tracking_code:
         return None
+    if market in FLEET_MARKETS:
+        return FLEET_TRACKING_URL.format(
+            host=FLEET_MARKETS[market], tracking_code=tracking_code
+        )
     host, _language_code = MARKETS[market]
     return TRACKING_URL.format(host=host, tracking_code=tracking_code)
+
+
+# The fleet feed's own stage codes. Taiwan's network (SP_*, DOP_*) and the
+# hub codes the same feed carries elsewhere (FMHub_*, LMHub_*, SOC_*).
+_FLEET_STATUS_MAP: dict[str, ParcelStatus] = {
+    "Created": ParcelStatus.REGISTERED,
+    "DOP_Received": ParcelStatus.IN_TRANSIT,
+    "FMHub_Pickup_Done": ParcelStatus.IN_TRANSIT,
+    "FMHub_Received": ParcelStatus.IN_TRANSIT,
+    "FMHub_LHTransporting": ParcelStatus.IN_TRANSIT,
+    "SP_LHTransporting": ParcelStatus.IN_TRANSIT,
+    "SOC_LHUnloading": ParcelStatus.IN_TRANSIT,
+    "SOC_LHUnloaded": ParcelStatus.IN_TRANSIT,
+    "SOC_Received": ParcelStatus.IN_TRANSIT,
+    "SOC_LHTransporting": ParcelStatus.IN_TRANSIT,
+    "LMHub_LHUnloading": ParcelStatus.IN_TRANSIT,
+    "LMHub_LHUnloaded": ParcelStatus.IN_TRANSIT,
+    "LMHub_Received": ParcelStatus.IN_TRANSIT,
+    "SP_HD_Received": ParcelStatus.IN_TRANSIT,
+    "Delivering": ParcelStatus.OUT_FOR_DELIVERY,
+    "SP_Ready_Collection": ParcelStatus.AT_PICKUP_POINT,
+    "SP_Collection_Collected": ParcelStatus.DELIVERED,
+    "Delivered": ParcelStatus.DELIVERED,
+}
+
+
+def map_fleet_status(code: Any) -> ParcelStatus | None:
+    """Map one fleet stage code, warning once for one not in the map."""
+    if not code:
+        return None
+    mapped = _FLEET_STATUS_MAP.get(str(code))
+    if mapped is None:
+        _warn_once(
+            f"fleet_status:{code}",
+            "Unrecognised Shopee Xpress fleet status=%r, reported as the newest "
+            "status we do recognise.",
+            code,
+        )
+    return mapped
+
+
+def _fleet_events(raw: dict[str, Any]) -> list[dict[str, Any]]:
+    """Return the feed's scans oldest-first, dropping exact repeats."""
+    events: list[dict[str, Any]] = []
+    seen: set[tuple[Any, Any]] = set()
+    for event in raw.get("tracking_list") or []:
+        if not isinstance(event, dict):
+            continue
+        key = (event.get("timestamp"), event.get("status"))
+        if key in seen:
+            continue
+        seen.add(key)
+        events.append(event)
+    events.sort(key=_fleet_sort_key)
+    return events
+
+
+def _fleet_sort_key(event: dict[str, Any]) -> float:
+    value = event.get("timestamp")
+    return float(value) if isinstance(value, (int, float)) else 0.0
+
+
+def _normalize_fleet_parcel(
+    raw: dict[str, Any], *, market: str, include_history: bool
+) -> dict:
+    """Normalise a fleet-feed reply (``data``, or ``{}`` when it holds nothing)."""
+    requested_code = raw.get(REQUESTED_CODE_KEY)
+    events = _fleet_events(raw)
+    statuses = [map_fleet_status(event.get("status")) for event in events]
+
+    status = ParcelStatus.UNKNOWN
+    status_event: dict[str, Any] = {}
+    current = map_fleet_status(raw.get("current_status"))
+    if current is not None:
+        status = current
+        status_event = next(
+            (
+                e
+                for e in reversed(events)
+                if e.get("status") == raw.get("current_status")
+            ),
+            events[-1] if events else {},
+        )
+    else:
+        for event, mapped in zip(reversed(events), reversed(statuses), strict=True):
+            if mapped is not None:
+                status, status_event = mapped, event
+                break
+    newest = events[-1] if events else {}
+    delivered = status is ParcelStatus.DELIVERED
+
+    history = [
+        {
+            "timestamp": _epoch_seconds_to_iso(
+                event.get("timestamp"), field="timestamp"
+            ),
+            "status": mapped,
+            "raw_status": event.get("message") or event.get("status"),
+        }
+        for event, mapped in zip(events, statuses, strict=True)
+    ][-HISTORY_MAX_EVENTS:]
+
+    barcode = raw.get("sls_tracking_number") or requested_code
+    data = {key: value for key, value in raw.items() if key != REQUESTED_CODE_KEY}
+    return {
+        "carrier": "Shopee Xpress",
+        "barcode": barcode,
+        "sender": None,
+        "receiver": raw.get("recipient_name") or None,
+        "status": status,
+        "raw_status": newest.get("message") or raw.get("current_status") or None,
+        "delivered": delivered,
+        "delivered_at": (
+            _epoch_seconds_to_iso(status_event.get("timestamp"), field="timestamp")
+            if delivered
+            else None
+        ),
+        "planned_from": None,
+        "planned_to": None,
+        "pickup": status is ParcelStatus.AT_PICKUP_POINT,
+        "pickup_point": None,
+        "url": _tracking_url(market, barcode),
+        "weight": None,
+        "dimensions": None,
+        "history": history if include_history else None,
+        "raw": {**data, "market": market},
+    }
 
 
 def normalize_parcel(
@@ -453,6 +586,10 @@ def normalize_parcel(
     seen in production, never in the six original captures, so both are
     carried through unbranched rather than assigned any inferred meaning.
     """
+    if market in FLEET_MARKETS:
+        return _normalize_fleet_parcel(
+            raw, market=market, include_history=include_history
+        )
     order_info = raw.get("order_info") or {}
     parcel_info = raw.get("parcel_info") or {}
     sls_tracking_info = raw.get("sls_tracking_info") or {}

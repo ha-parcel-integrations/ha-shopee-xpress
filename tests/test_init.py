@@ -17,7 +17,7 @@ from custom_components.shopee_xpress.const import (
     DOMAIN,
 )
 
-from .payloads import ID_CODE, MY_CODE, id_data, my_data as _sample
+from .payloads import ID_CODE, MY_CODE, TW_CODE, id_data, my_data as _sample, tw_data
 
 OTHER_CODE = "TH000000000000"
 
@@ -257,3 +257,29 @@ async def test_stale_per_parcel_sensor_removed_on_next_setup(hass):
         registry.async_get_entity_id("sensor", DOMAIN, f"{entry.entry_id}_{ID_CODE}")
         is None
     )
+
+
+async def test_taiwan_hub_reads_the_fleet_feed(hass):
+    entry = _entry([{CONF_TRACKING_CODE: TW_CODE}], market="TW")
+    entry.add_to_hass(hass)
+
+    fleet = AsyncMock(return_value=tw_data())
+    order_info = AsyncMock(return_value=_sample())
+    with (
+        patch(
+            "custom_components.shopee_xpress.api.ShopeeXpressFleetClient.async_get_parcel",
+            new=fleet,
+        ),
+        patch(
+            "custom_components.shopee_xpress.api.ShopeeXpressApiClient.async_get_parcel",
+            new=order_info,
+        ),
+    ):
+        assert await hass.config_entries.async_setup(entry.entry_id)
+        await hass.async_block_till_done()
+
+    assert entry.state is ConfigEntryState.LOADED
+    fleet.assert_awaited_once_with(TW_CODE)
+    order_info.assert_not_awaited()
+    assert hass.states.get("sensor.shopee_xpress_tw_delivered_parcels").state == "1"
+    assert hass.states.get("sensor.shopee_xpress_tw_awaiting_pickup").state == "0"

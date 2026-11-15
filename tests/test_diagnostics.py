@@ -7,7 +7,7 @@ from custom_components.shopee_xpress.diagnostics import (
 )
 from custom_components.shopee_xpress.parcels import REQUESTED_CODE_KEY, normalize_parcel
 
-from .payloads import MY_CODE, VN_CODE, my_data, vn_data
+from .payloads import MY_CODE, TW_CODE, VN_CODE, my_data, tw_data, vn_data
 
 
 async def test_diagnostics_redacts_and_counts(hass):
@@ -108,3 +108,23 @@ async def test_diagnostics_counts_reflect_empty_lists(hass):
     }
     assert result["incoming"] == []
     assert result["delivered"] == []
+
+
+async def test_diagnostics_redacts_the_fleet_feeds_recipient_and_phone(hass):
+    entry = MagicMock()
+    entry.options = {"parcels": [], "market": "TW"}
+    raw = {
+        **tw_data(),
+        "recipient_name": "Someone",
+        "phone": "0900000000",
+        REQUESTED_CODE_KEY: TW_CODE,
+    }
+    entry.runtime_data.coordinator.data = [normalize_parcel(raw, market="TW")]
+    entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["incoming"][0]["raw"]["recipient_name"] == "**REDACTED**"
+    assert result["incoming"][0]["raw"]["phone"] == "**REDACTED**"
+    assert result["incoming"][0]["receiver"] == "**REDACTED**"

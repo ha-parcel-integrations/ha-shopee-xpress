@@ -78,6 +78,7 @@
         "id": "Indonésia",
         "my": "Malásia",
         "ph": "Filipinas",
+        "tw": "Taiwan",
         "th": "Tailândia",
         "vn": "Vietnã"
       }
@@ -141,6 +142,10 @@
       },
       "next_delivery": {
         "name": "Próxima entrega"
+      },
+      "awaiting_pickup": {
+        "name": "Aguardando retirada",
+        "unit_of_measurement": "pacotes"
       },
       "delivered_parcels": {
         "name": "Pacotes entregues",

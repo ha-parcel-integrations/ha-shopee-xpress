@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 from custom_components.shopee_xpress.const import ParcelStatus
 from custom_components.shopee_xpress.sensor import (
+    ShopeeXpressAwaitingPickupSensor,
     ShopeeXpressDeliveredParcelsSensor,
     ShopeeXpressIncomingParcelsSensor,
     ShopeeXpressLastUpdateSensor,
@@ -109,3 +110,16 @@ def test_last_update_sensor():
     coordinator.last_success_time = moment
     sensor = ShopeeXpressLastUpdateSensor(coordinator, _entry())
     assert sensor.native_value == moment
+
+
+def test_awaiting_pickup_counts_only_at_pickup_point_status():
+    coordinator = _coordinator(
+        [
+            _parcel("A", status=ParcelStatus.AT_PICKUP_POINT),
+            _parcel("B", status=ParcelStatus.IN_TRANSIT),
+        ]
+    )
+    sensor = ShopeeXpressAwaitingPickupSensor(coordinator, _entry())
+    assert sensor.native_value == 1
+    assert sensor.extra_state_attributes["parcels"][0]["barcode"] == "A"
+    assert sensor.unique_id == "e1_awaiting_pickup"

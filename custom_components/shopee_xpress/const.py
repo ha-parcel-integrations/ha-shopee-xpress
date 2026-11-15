@@ -44,7 +44,18 @@ KNOWN_CAPABILITIES = frozenset(
 # what CAPABILITIES tracks. history is always buildable from the event list.
 # url is never in the payload either, but — unlike those — is constructed
 # rather than read: see TRACKING_URL below.
-CAPABILITIES = frozenset({"delivery_window", "history", "url"})
+# Taiwan runs on the fleet feed, which carries no delivery estimate. Keys are
+# the market picker's English names, in its order.
+_ORDER_INFO_CAPABILITIES = frozenset({"delivery_window", "history", "url"})
+CAPABILITIES_BY_VARIANT = {
+    "Brazil": _ORDER_INFO_CAPABILITIES,
+    "Indonesia": _ORDER_INFO_CAPABILITIES,
+    "Malaysia": _ORDER_INFO_CAPABILITIES,
+    "Philippines": _ORDER_INFO_CAPABILITIES,
+    "Taiwan": frozenset({"history", "url"}),
+    "Thailand": _ORDER_INFO_CAPABILITIES,
+    "Vietnam": _ORDER_INFO_CAPABILITIES,
+}
 
 # One JSON GET, no auth, keyed on a query parameter that resolves against
 # several identifier namespaces at once (see MARKETS and the tracking-code
@@ -85,6 +96,20 @@ MARKETS: dict[str, tuple[str, str]] = {
     "TH": ("spx.co.th", "th"),
     "VN": ("spx.vn", "en"),
 }
+
+# Markets tracked on the fleet feed instead: the order lookup answers every
+# Taiwanese number as missing. ISO2 -> host.
+FLEET_MARKETS: dict[str, str] = {
+    "TW": "spx.tw",
+}
+FLEET_API_URL = "https://{host}/api/v2/fleet_order/tracking/search"
+FLEET_TRACKING_URL = "https://{host}/detail/{tracking_code}"
+# The feed's own answers for a number it holds nothing for: unknown, and a
+# history it no longer keeps. Neither is an error.
+FLEET_NO_DATA_RETCODES = frozenset({-1000, -1217})
+
+# Every market the picker offers, in code order.
+ALL_MARKETS: tuple[str, ...] = tuple(sorted({*MARKETS, *FLEET_MARKETS}))
 
 # Every response's data block set differs by market *and* by which identifier
 # the request used, and only these two survive in all of them.

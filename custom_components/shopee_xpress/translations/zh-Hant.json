@@ -1,0 +1,162 @@
+{
+  "title": "Shopee Xpress",
+  "config": {
+    "step": {
+      "user": {
+        "title": "設定 Shopee Xpress",
+        "description": "Shopee Xpress 在每個市場各自營運，一個市場的物流追蹤編號無法在另一個市場查詢。請選擇此中心所屬的市場；如需第二個市場，之後再新增一個中心。設定完成後即可新增包裹。",
+        "data": {
+          "market": "市場"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Shopee Xpress 選項",
+        "sections": {
+          "parcels": {
+            "name": "包裹",
+            "data": {
+              "add": "新增包裹",
+              "remove": "移除包裹"
+            },
+            "data_description": {
+              "add": "輸入此中心所屬市場的物流追蹤編號。可在蝦皮訂單頁面或出貨通知中找到。"
+            }
+          },
+          "delivered": {
+            "name": "已送達包裹",
+            "data": {
+              "delivered_filter_type": "篩選方式",
+              "delivered_filter_amount": "數量"
+            },
+            "data_description": {
+              "delivered_filter_type": "顯示過去 X 天內送達的包裹，或只顯示最近的 X 件。",
+              "delivered_filter_amount": "要顯示的天數或包裹數。"
+            }
+          },
+          "history": {
+            "name": "包裹歷程",
+            "data": {
+              "include_history": "包含狀態歷程"
+            },
+            "data_description": {
+              "include_history": "為每件包裹新增歷程屬性，列出每次狀態更新（時間、狀態、原始文字）。預設為關閉。"
+            }
+          }
+        },
+        "menu_options": {
+          "parcels": "包裹",
+          "settings": "設定"
+        }
+      },
+      "parcels": {
+        "title": "管理包裹",
+        "data": {
+          "tracking_codes": "物流追蹤編號"
+        }
+      },
+      "settings": {
+        "title": "設定",
+        "data": {
+          "delivered_filter_type": "已送達包裹：篩選方式",
+          "delivered_filter_amount": "已送達包裹：數量",
+          "include_history": "包含狀態歷程"
+        }
+      }
+    },
+    "error": {
+      "already_tracked": "這件包裹已在追蹤中。"
+    }
+  },
+  "selector": {
+    "market": {
+      "options": {
+        "br": "巴西",
+        "id": "印尼",
+        "my": "馬來西亞",
+        "ph": "菲律賓",
+        "tw": "台灣",
+        "th": "泰國",
+        "vn": "越南"
+      }
+    },
+    "delivered_filter_type": {
+      "options": {
+        "days": "天數",
+        "parcels": "包裹數"
+      }
+    }
+  },
+  "services": {
+    "track_parcel": {
+      "name": "追蹤包裹",
+      "description": "以 Shopee Xpress 物流追蹤編號開始追蹤包裹。",
+      "fields": {
+        "tracking_code": {
+          "name": "物流追蹤編號",
+          "description": "Shopee Xpress 物流追蹤編號。"
+        },
+        "market": {
+          "name": "市場",
+          "description": "要加入哪個市場的中心。僅在設定了多個中心時需要。"
+        }
+      }
+    },
+    "untrack_parcel": {
+      "name": "停止追蹤包裹",
+      "description": "以 Shopee Xpress 物流追蹤編號停止追蹤包裹。",
+      "fields": {
+        "tracking_code": {
+          "name": "物流追蹤編號",
+          "description": "要停止追蹤的 Shopee Xpress 物流追蹤編號。"
+        }
+      }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "parcel_registered": "已登記一件包裹",
+      "parcel_status_changed": "包裹狀態已變更",
+      "parcel_delivered": "包裹已送達",
+      "parcel_delivery_time_changed": "包裹的預計送達時間已變更"
+    }
+  },
+  "entity": {
+    "button": {
+      "refresh": {
+        "name": "重新整理"
+      }
+    },
+    "calendar": {
+      "deliveries": {
+        "name": "配送"
+      }
+    },
+    "sensor": {
+      "incoming_parcels": {
+        "name": "待收包裹",
+        "unit_of_measurement": "件"
+      },
+      "next_delivery": {
+        "name": "下一次配送"
+      },
+      "awaiting_pickup": {
+        "name": "待取件",
+        "unit_of_measurement": "件"
+      },
+      "delivered_parcels": {
+        "name": "已送達包裹",
+        "unit_of_measurement": "件"
+      },
+      "last_update": {
+        "name": "上次成功更新"
+      },
+      "parcel": {
+        "name": "包裹 {barcode}"
+      }
+    }
+  }
+}

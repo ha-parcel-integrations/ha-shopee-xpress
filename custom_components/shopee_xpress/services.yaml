@@ -16,6 +16,7 @@ track_parcel:
             - "MY"
             - "PH"
             - "TH"
+            - "TW"
             - "VN"
 
 untrack_parcel:

@@ -31,6 +31,7 @@ from homeassistant.helpers.translation import async_get_translations
 import voluptuous as vol
 
 from .const import (
+    ALL_MARKETS,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
@@ -41,7 +42,6 @@ from .const import (
     DEFAULT_DELIVERED_FILTER_TYPE,
     DEFAULT_INCLUDE_HISTORY,
     DOMAIN,
-    MARKETS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def warn_unrecognised_tracking_code(value: str) -> None:
 
 
 async def _sorted_market_options(hass: HomeAssistant) -> list[str]:
-    """Return ``MARKETS`` keys (lower-cased), sorted by translated country name.
+    """Return every market code (lower-cased), sorted by translated country name.
 
     `const.py`'s `MARKETS` happens to be in English-alphabetical order
     (Brazil, Indonesia, Malaysia, Philippines, Thailand, Vietnam), which is
@@ -121,11 +121,11 @@ async def _sorted_market_options(hass: HomeAssistant) -> list[str]:
     names = await async_get_translations(
         hass, language, "selector", integrations=[DOMAIN]
     )
-    if not any(_key(code) in names for code in MARKETS):
+    if not any(_key(code) in names for code in ALL_MARKETS):
         names = await async_get_translations(
             hass, "en", "selector", integrations=[DOMAIN]
         )
-    codes = sorted(MARKETS, key=lambda code: names.get(_key(code), code))
+    codes = sorted(ALL_MARKETS, key=lambda code: names.get(_key(code), code))
     return [code.lower() for code in codes]
 
 

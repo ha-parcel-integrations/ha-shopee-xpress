@@ -15,7 +15,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.shopee_xpress import parcels as parcels_module
 from custom_components.shopee_xpress.const import (
-    CAPABILITIES,
+    ALL_MARKETS,
+    CAPABILITIES_BY_VARIANT,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     DOMAIN,
@@ -43,6 +44,7 @@ from .payloads import (
     MY_CODE,
     PH_CODE,
     TH_CODE,
+    TW_CODE,
     VN_CODE,
     br_data,
     id_data,
@@ -50,6 +52,8 @@ from .payloads import (
     ph_data,
     record,
     th_data,
+    tw_data,
+    tw_ready_data,
     vn_data,
 )
 
@@ -392,31 +396,44 @@ def test_normalize_publishes_exactly_the_canonical_keys():
 
 
 def test_capabilities_are_known_values():
-    assert CAPABILITIES <= KNOWN_CAPABILITIES
+    for fields in CAPABILITIES_BY_VARIANT.values():
+        assert fields <= KNOWN_CAPABILITIES
+
+
+def test_every_market_has_a_capability_row():
+    names = {
+        "BR": "Brazil",
+        "ID": "Indonesia",
+        "MY": "Malaysia",
+        "PH": "Philippines",
+        "TH": "Thailand",
+        "TW": "Taiwan",
+        "VN": "Vietnam",
+    }
+    assert set(CAPABILITIES_BY_VARIANT) == {names[code] for code in ALL_MARKETS}
 
 
 def test_capabilities_match_what_normalize_parcel_actually_returns():
+    order_info = CAPABILITIES_BY_VARIANT["Malaysia"]
     delivered = normalize_parcel(
         _stamped(my_data(), MY_CODE), market="MY", include_history=True
     )
-    if "weight" in CAPABILITIES:
-        assert delivered["weight"] is not None
-    if "dimensions" in CAPABILITIES:
-        assert delivered["dimensions"] is not None
-    if "delivery_window" in CAPABILITIES:
-        # MY is delivered so its own window is suppressed — check a live one.
-        active = normalize_parcel(_stamped(id_data(), ID_CODE), market="ID")
-        # ID has no edd_info at all; use a market that legitimately carries one.
-        th_active = th_data()
-        th_active["sls_tracking_info"]["records"][0]["milestone_code"] = 6
-        active = normalize_parcel(_stamped(th_active, TH_CODE), market="TH")
-        assert active["planned_from"] is not None or active["planned_to"] is not None
-    if "pickup_point" in CAPABILITIES:
-        assert delivered["pickup_point"] is not None
-    if "url" in CAPABILITIES:
-        assert delivered["url"] is not None
-    if "history" in CAPABILITIES:
-        assert delivered["history"] is not None
+    assert "weight" not in order_info and "dimensions" not in order_info
+    assert "pickup_point" not in order_info
+    th_active = th_data()
+    th_active["sls_tracking_info"]["records"][0]["milestone_code"] = 6
+    active = normalize_parcel(_stamped(th_active, TH_CODE), market="TH")
+    assert active["planned_from"] is not None or active["planned_to"] is not None
+    assert delivered["url"] is not None
+    assert delivered["history"] is not None
+
+    fleet = CAPABILITIES_BY_VARIANT["Taiwan"]
+    taiwan = normalize_parcel(
+        _stamped(tw_data(), TW_CODE), market="TW", include_history=True
+    )
+    assert fleet == {"history", "url"}
+    assert taiwan["url"] is not None
+    assert taiwan["history"] is not None
 
 
 # --- Malaysia: the reference "everything present" shape --------------------
@@ -874,3 +891,68 @@ def test_delivered_filter_by_count():
 def test_delivered_filter_keeps_unparseable_timestamp():
     parcels = [{"barcode": "WEIRD", "delivered_at": "nonsense"}]
     assert apply_delivered_filter(parcels, _entry("days", 7)) == parcels
+
+
+# --- Taiwan: the fleet feed -------------------------------------------------
+
+
+def test_normalize_taiwan_delivered():
+    parcel = normalize_parcel(
+        _stamped(tw_data(), TW_CODE), market="TW", include_history=True
+    )
+    assert list(parcel) == CANONICAL_KEYS
+    assert parcel["barcode"] == TW_CODE
+    assert parcel["status"] is ParcelStatus.DELIVERED
+    assert parcel["delivered"] is True
+    assert parcel["delivered_at"] == datetime.fromtimestamp(1791336467, UTC).isoformat()
+    assert parcel["raw_status"] == "買家取件成功"
+    assert parcel["receiver"] is None
+    assert parcel["url"] == f"https://spx.tw/detail/{TW_CODE}"
+    # Oldest first, the repeated sorting-centre scan kept once.
+    assert [entry["status"] for entry in parcel["history"]] == [
+        ParcelStatus.REGISTERED,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.OUT_FOR_DELIVERY,
+        ParcelStatus.DELIVERED,
+    ]
+    assert parcel["raw"]["market"] == "TW"
+    assert "_requested_tracking_code" not in parcel["raw"]
+
+
+def test_normalize_taiwan_waiting_at_the_store():
+    parcel = normalize_parcel(_stamped(tw_ready_data(), TW_CODE), market="TW")
+    assert parcel["status"] is ParcelStatus.AT_PICKUP_POINT
+    assert parcel["pickup"] is True
+    assert parcel["pickup_point"] is None
+    assert parcel["delivered"] is False
+
+
+def test_normalize_taiwan_without_data_is_unknown():
+    parcel = normalize_parcel(_stamped({}, TW_CODE), market="TW")
+    assert parcel["status"] is ParcelStatus.UNKNOWN
+    assert parcel["barcode"] == TW_CODE
+    assert parcel["history"] is None
+
+
+def test_unknown_fleet_status_falls_back_to_the_newest_known_scan(caplog):
+    data = tw_data()
+    data["current_status"] = "SP_Brand_New"
+    data["tracking_list"].insert(
+        0, {"timestamp": 1791399999, "status": "SP_Brand_New", "message": "x"}
+    )
+    with caplog.at_level(logging.WARNING):
+        parcel = normalize_parcel(_stamped(data, TW_CODE), market="TW")
+    assert parcel["status"] is ParcelStatus.DELIVERED
+    assert "SP_Brand_New" in caplog.text
+
+
+def test_fleet_scan_without_a_numeric_timestamp_sorts_first():
+    data = tw_data()
+    data["tracking_list"].append(
+        {"timestamp": "soon", "status": "Created", "message": "x"}
+    )
+    parcel = normalize_parcel(_stamped(data, TW_CODE), market="TW")
+    assert parcel["status"] is ParcelStatus.DELIVERED

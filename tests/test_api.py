@@ -15,9 +15,19 @@ import pytest
 from custom_components.shopee_xpress.api import (
     ShopeeXpressApiClient,
     ShopeeXpressApiError,
+    ShopeeXpressFleetClient,
+    fleet_query,
 )
 
-from .payloads import MY_CODE, envelope, error_envelope, my_data
+from .payloads import (
+    MY_CODE,
+    TW_CODE,
+    envelope,
+    error_envelope,
+    fleet_envelope,
+    my_data,
+    tw_data,
+)
 
 
 def _session_returning(status: int, body: object = None) -> MagicMock:
@@ -117,3 +127,51 @@ async def test_get_parcel_uses_this_clients_market_for_every_call():
     url = session.get.call_args[0][0]
     assert "spx.co.th" in url
     assert "language_code=th" in url
+
+
+# --- the fleet feed ---------------------------------------------------------
+
+
+def _fleet(session) -> ShopeeXpressFleetClient:
+    return ShopeeXpressFleetClient(session, host="spx.tw")
+
+
+def test_fleet_query_appends_the_checksum_to_the_seconds():
+    query = fleet_query(TW_CODE, 1700000000)
+    number, rest = query.split("|")
+    assert number == TW_CODE
+    assert rest.startswith("1700000000")
+    assert len(rest) == len("1700000000") + 64
+
+
+async def test_fleet_returns_data_and_sends_a_browser_user_agent():
+    session = _session_returning(200, fleet_envelope(tw_data()))
+    data = await _fleet(session).async_get_parcel(TW_CODE)
+
+    assert data["current_status"] == "Delivered"
+    args, kwargs = session.get.call_args
+    assert args == ("https://spx.tw/api/v2/fleet_order/tracking/search",)
+    assert kwargs["params"]["sls_tracking_number"].startswith(f"{TW_CODE}|")
+    assert kwargs["headers"]["User-Agent"].startswith("Mozilla/5.0 (Macintosh")
+
+
+@pytest.mark.parametrize("retcode", [-1000, -1217])
+async def test_fleet_no_data_answers_are_empty_not_errors(retcode):
+    session = _session_returning(200, fleet_envelope(None, retcode, "x"))
+    assert await _fleet(session).async_get_parcel(TW_CODE) == {}
+
+
+@pytest.mark.parametrize(
+    ("status", "body"),
+    [
+        (403, {"action_type": 2}),
+        (200, "<html>"),
+        (200, ["not", "a", "dict"]),
+        (200, {"retcode": 5, "message": "boom"}),
+        (200, {"retcode": 0, "data": []}),
+        (200, fleet_envelope({**tw_data(), "sls_tracking_number": "TW999999999999Z"})),
+    ],
+)
+async def test_fleet_failures_raise(status, body):
+    with pytest.raises(ShopeeXpressApiError):
+        await _fleet(_session_returning(status, body)).async_get_parcel(TW_CODE)

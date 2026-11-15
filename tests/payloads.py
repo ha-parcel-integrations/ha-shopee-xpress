@@ -32,6 +32,7 @@ PH_CODE = "SPEPH000000000000"
 BR_CODE = "BR000000000000Y"
 ID_CODE = "SPXID000000000000"
 VN_CODE = "SPXVN00000000000C"
+TW_CODE = "TW000000000001X"
 
 _EMPTY_LOCATION: dict[str, str] = {
     "location_name": "",
@@ -1031,4 +1032,70 @@ def vn_data(code: str = VN_CODE) -> dict:
         },
         "is_instant_order": False,
         "is_shopee_market_order": False,
+    }
+
+
+# --- Taiwan: the fleet feed ------------------------------------------------
+# The shape of a real delivered fleet reply (timestamps Unix seconds, scans
+# newest first, milestones in status_list); every value here is invented.
+
+
+def fleet_event(status: str, timestamp: int, message: str) -> dict:
+    return {"timestamp": timestamp, "status": status, "message": message}
+
+
+def tw_data(code: str = TW_CODE) -> dict:
+    """A delivered Taiwanese parcel, collected from the buyer's store."""
+    return {
+        "sls_tracking_number": code,
+        "need_translate": 1,
+        "delivery_type": "AIRPAY_CC",
+        "recipient_name": "",
+        "phone": "",
+        "current_status": "Delivered",
+        "tracking_list": [
+            fleet_event("Delivered", 1791336467, "買家取件成功"),
+            fleet_event("Delivering", 1791333342, "您的包裹配送中"),
+            fleet_event("SP_HD_Received", 1791294030, "包裹抵達營業所/服務據點"),
+            fleet_event("SOC_Received", 1791244308, "包裹抵達理貨中心，處理中"),
+            fleet_event("SOC_Received", 1791244308, "包裹抵達理貨中心，處理中"),
+            fleet_event("SP_LHTransporting", 1791212509, "包裹送往理貨中心"),
+            fleet_event("DOP_Received", 1791209212, "賣家已寄件成功"),
+            fleet_event("Created", 1791200894, "賣家將於確認訂單後出貨"),
+        ],
+        "status_list": [
+            {
+                "timestamp": 1791200894,
+                "code": 1,
+                "text": "Order Created",
+                "state_ls": "Created",
+            },
+            {
+                "timestamp": 1791336467,
+                "code": 1,
+                "text": "Delivered",
+                "state_ls": "TW_Delivered",
+            },
+        ],
+    }
+
+
+def tw_ready_data(code: str = TW_CODE) -> dict:
+    """A Taiwanese parcel waiting at the buyer's pickup store."""
+    data = tw_data(code)
+    data["current_status"] = "SP_Ready_Collection"
+    data["tracking_list"] = [
+        fleet_event("SP_Ready_Collection", 1791294030, "包裹已配達買家取件門市"),
+        *data["tracking_list"][3:],
+    ]
+    return data
+
+
+def fleet_envelope(
+    data: dict | None, retcode: int = 0, message: str = "success"
+) -> dict:
+    return {
+        "retcode": retcode,
+        "message": message,
+        "data": data if data is not None else {},
     }

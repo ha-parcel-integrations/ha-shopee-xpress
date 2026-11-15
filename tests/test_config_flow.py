@@ -19,6 +19,7 @@ from custom_components.shopee_xpress.config_flow import (
     valid_tracking_code,
 )
 from custom_components.shopee_xpress.const import (
+    ALL_MARKETS,
     CONF_DELIVERED_FILTER_AMOUNT,
     CONF_DELIVERED_FILTER_TYPE,
     CONF_INCLUDE_HISTORY,
@@ -26,7 +27,6 @@ from custom_components.shopee_xpress.const import (
     CONF_PARCELS,
     CONF_TRACKING_CODE,
     DOMAIN,
-    MARKETS,
 )
 
 
@@ -89,21 +89,46 @@ def test_warn_unrecognised_tracking_code_silent_for_known_shapes(caplog):
 # ---------------------------------------------------------------------------
 
 
-async def test_sorted_market_options_english_matches_code_order(hass):
+async def test_sorted_market_options_english_sorts_by_name(hass):
+    """Taiwan sorts before Thailand by name, after it by code."""
     hass.config.language = "en"
-    assert await _sorted_market_options(hass) == ["br", "id", "my", "ph", "th", "vn"]
+    assert await _sorted_market_options(hass) == [
+        "br",
+        "id",
+        "my",
+        "ph",
+        "tw",
+        "th",
+        "vn",
+    ]
 
 
 async def test_sorted_market_options_dutch_is_not_code_order(hass):
     """Brazilië, Filipijnen, Indonesië, Maleisië, Thailand, Vietnam — PH sorts
     second in Dutch, not fourth as it does in the code-alphabetical order."""
     hass.config.language = "nl"
-    assert await _sorted_market_options(hass) == ["br", "ph", "id", "my", "th", "vn"]
+    assert await _sorted_market_options(hass) == [
+        "br",
+        "ph",
+        "id",
+        "my",
+        "tw",
+        "th",
+        "vn",
+    ]
 
 
 async def test_sorted_market_options_unshipped_locale_falls_back_to_english(hass):
     hass.config.language = "de"
-    assert await _sorted_market_options(hass) == ["br", "id", "my", "ph", "th", "vn"]
+    assert await _sorted_market_options(hass) == [
+        "br",
+        "id",
+        "my",
+        "ph",
+        "tw",
+        "th",
+        "vn",
+    ]
 
 
 async def test_sorted_market_options_falls_back_when_lookup_is_truly_empty(
@@ -122,13 +147,21 @@ async def test_sorted_market_options_falls_back_when_lookup_is_truly_empty(
     hass.config.language = "en"
     # No translations available anywhere -> every code falls back to itself
     # as the sort key, which is still deterministic and never raises.
-    assert await _sorted_market_options(hass) == ["br", "id", "my", "ph", "th", "vn"]
+    assert await _sorted_market_options(hass) == [
+        "br",
+        "id",
+        "my",
+        "ph",
+        "th",
+        "tw",
+        "vn",
+    ]
 
 
 async def test_sorted_market_options_returns_every_market_exactly_once(hass):
     hass.config.language = "nl"
     options = await _sorted_market_options(hass)
-    assert sorted(options) == sorted(code.lower() for code in MARKETS)
+    assert sorted(options) == sorted(code.lower() for code in ALL_MARKETS)
 
 
 # ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@
 > [open an issue](https://github.com/ha-parcel-integrations/ha-shopee-xpress/issues/new)
 > if you hit one.
 
-A custom Home Assistant integration that tracks your Shopee Xpress (SPX) parcels — Shopee's own in-house last-mile carrier, used across several of its Southeast Asian and South American markets. No account is needed: you enter the tracking code yourself, the same way you'd look it up on Shopee.
+A custom Home Assistant integration that tracks your Shopee Xpress (SPX) parcels — Shopee's own in-house last-mile carrier, used across several of its Asian and South American markets. No account is needed: you enter the tracking code yourself, the same way you'd look it up on Shopee.
 
 ## Contents
 
@@ -54,8 +54,7 @@ A custom Home Assistant integration that tracks your Shopee Xpress (SPX) parcels
 ## Supported markets
 
 Shopee Xpress runs a separate backend host per market — a tracking code from
-one market does not resolve on another's. Only markets whose host has
-actually answered with a real parcel are wired in:
+one market does not resolve on another's:
 
 | Market | |
 |---|---|
@@ -63,10 +62,15 @@ actually answered with a real parcel are wired in:
 | Indonesia | 🇮🇩 |
 | Malaysia | 🇲🇾 |
 | Philippines | 🇵🇭 |
+| Taiwan | 🇹🇼 |
 | Thailand | 🇹🇭 |
 | Vietnam | 🇻🇳 |
 
-Shopee Xpress operates in other markets too (e.g. Singapore, Taiwan) — those
+Taiwan is Shopee's store-to-store service (蝦皮店到店): a parcel waits at a
+pickup store, it carries no delivery estimate, and old parcels lose their
+history after a while.
+
+Shopee Xpress operates in other markets too (e.g. Singapore) — those
 aren't supported yet because their hosts haven't been confirmed. [Open a
 discussion](https://github.com/ha-parcel-integrations/.github/discussions/new/choose)
 if you can help test one.
@@ -152,10 +156,11 @@ Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress
 | `sensor.shopee_xpress_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.shopee_xpress_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.shopee_xpress_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.shopee_xpress_awaiting_pickup` | Parcels waiting at a pickup store (Taiwan) |
 | `sensor.shopee_xpress_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.shopee_xpress_last_successful_update` | Diagnostic: when Shopee Xpress was last polled successfully |
 
-A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
+A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand; never Taiwan), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
 
 A **`button.shopee_xpress_refresh`** entity triggers an immediate poll outside
 the [dynamic polling](#dynamic-polling) cadence, and a
@@ -176,10 +181,9 @@ The `status` field is the carrier-agnostic enum shared by the whole integration 
 | `returning` | Delivery failed and the parcel is going back to the sender — covers both the return journey and the parcel already being back with the sender |
 | `unknown` | A status code we haven't mapped yet — please report it |
 
-`at_pickup_point` and `problem` are not produced by this integration today.
-Shopee Xpress has never shown a parcel collected from a pickup point in any
-capture, and a failed delivery attempt or pickup does not get its own status
-code at all — the carrier records it as free text and a reason code beside
+`at_pickup_point` comes from Taiwan only: a parcel waiting at the buyer's
+pickup store. `problem` is not produced by this integration today: a failed
+delivery attempt or pickup does not get its own status code at all — the carrier records it as free text and a reason code beside
 an otherwise-ordinary status, visible in the `raw_status` and `raw`
 attributes rather than in `status` itself.
 
