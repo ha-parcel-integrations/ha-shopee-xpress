@@ -1,10 +1,8 @@
 """Real (redacted) Shopee Xpress API payloads shared by the test modules.
 
 Six captures — one per supported market — reproduced from
-``carrier-research/api/shopee-xpress/tracking.md`` (the private research
-repo's own redacted transcription of real device traffic; nothing here was
-invented). Values that identify a person, an address, an order or a specific
-device are already masked in that source and stay masked here (``"0"``,
+redacted real device traffic; nothing here was invented. Values that identify
+a person, an address, an order or a specific device are masked (``"0"``,
 ``"<city>"``-style placeholders, empty coordinates). Structure, key names,
 milestone/tracking codes and the relationships between them (which record is
 newest, which fields repeat, which blocks are absent) are real.
@@ -23,7 +21,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 # tracking codes as a user would have entered them (== the captured `spx_tn`
 # in every market except Brazil, whose capture was made with a value
-# byte-identical to that body's `sls_tn` — see tracking.md).
+# byte-identical to that body's `sls_tn`).
 # ---------------------------------------------------------------------------
 
 MY_CODE = "MY000000000000"

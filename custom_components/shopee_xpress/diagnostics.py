@@ -58,6 +58,9 @@ TO_REDACT = {
     "receiver_name",
     "recipient_name",
     "phone",
+    "email",
+    "address",
+    "receiver_address",
     "receiver_type_name",
     # free text that can embed a name, a driver task id or internal wording
     "description",

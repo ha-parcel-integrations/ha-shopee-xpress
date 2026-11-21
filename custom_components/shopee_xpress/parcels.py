@@ -26,12 +26,15 @@ Every place that matters logs the first unrecognised value once, via
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from collections.abc import Iterable
+from datetime import UTC, date, datetime, time, timedelta, tzinfo
 import logging
 import re
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_DELIVERED_FILTER_AMOUNT,
@@ -502,6 +505,125 @@ def _fleet_sort_key(event: dict[str, Any]) -> float:
     return float(value) if isinstance(value, (int, float)) else 0.0
 
 
+def _moment(value: Any, zone: tzinfo) -> tuple[datetime, bool, str] | None:
+    """Return ``(aware datetime, date_only, text)`` for a carrier time, or ``None``.
+
+    A naive time or a bare date gets ``zone``; an aware time keeps its offset
+    and, when it came in as a string, its own spelling.
+    """
+    if isinstance(value, datetime):
+        parsed = value
+    elif isinstance(value, date):
+        moment = datetime.combine(value, time.min, tzinfo=zone)
+        return moment, True, moment.isoformat()
+    elif isinstance(value, str) and value:
+        try:
+            if len(value) == 10:
+                moment = datetime.combine(
+                    date.fromisoformat(value), time.min, tzinfo=zone
+                )
+                return moment, True, moment.isoformat()
+            parsed = datetime.fromisoformat(value)
+        except ValueError:
+            return None
+        if parsed.tzinfo:
+            return parsed, False, value
+    else:
+        return None
+    moment = parsed if parsed.tzinfo else parsed.replace(tzinfo=zone)
+    return moment, False, moment.isoformat()
+
+
+def _end_of_day(moment: datetime, zone: tzinfo) -> datetime:
+    local = moment.astimezone(zone)
+    return datetime.combine(local.date(), time(23, 59, 59), tzinfo=zone)
+
+
+# Single-zone markets only; Indonesia and Brazil span several zones and use
+# Home Assistant's zone, like an unknown market.
+_MARKET_ZONES = {
+    "MY": "Asia/Kuala_Lumpur",
+    "PH": "Asia/Manila",
+    "TH": "Asia/Bangkok",
+    "VN": "Asia/Ho_Chi_Minh",
+    "SG": "Asia/Singapore",
+    "TW": "Asia/Taipei",
+}
+
+
+def _market_zone(market: str) -> tzinfo:
+    name = _MARKET_ZONES.get(market)
+    return ZoneInfo(name) if name else dt_util.get_default_time_zone()
+
+
+def planned_window(
+    start: Any, end: Any, *, zone: tzinfo
+) -> tuple[str | None, str | None]:
+    """Return ``(planned_from, planned_to)`` in the canonical window shape.
+
+    ``start`` and ``end`` are ISO strings, dates or datetimes, or ``None``; an
+    epoch number must be converted first (see ``to_iso_timestamp``). A window
+    keeps both ends. One moment with a time ends at ``23:59:59`` the same local
+    day; a date covers ``00:00:00`` to ``23:59:59``; two dates run from the
+    first day's start to the last day's end. Equal values are one moment,
+    reversed values are swapped, and ``planned_to`` is never set without
+    ``planned_from``. ``zone`` is the carrier's own zone: it dates naive times
+    and bare dates and decides which day a moment ends on, so a ``Z`` moment
+    still ends on the carrier's local day. When nothing is left of that day
+    after the moment, there is no ``planned_to``.
+    """
+    first = _moment(start, zone)
+    last = _moment(end, zone)
+    if first is None:
+        first, last = last, None
+    if first is None:
+        return None, None
+
+    def closing(moment: tuple[datetime, bool, str]) -> datetime:
+        return _end_of_day(moment[0], zone) if moment[1] else moment[0]
+
+    if last is not None and closing(last) < first[0]:
+        first, last = last, first
+    if last is not None and closing(last) == first[0]:
+        last = None
+
+    if last is None:
+        end_of_day = _end_of_day(first[0], zone)
+        return first[2], end_of_day.isoformat() if end_of_day > first[0] else None
+    return first[2], closing(last).isoformat() if last[1] else last[2]
+
+
+_NO_WINDOW_STATUSES = frozenset(
+    {ParcelStatus.AT_PICKUP_POINT, ParcelStatus.RETURNING, ParcelStatus.DELIVERED}
+)
+
+
+def planned_for_status(
+    status: ParcelStatus, planned_from: str | None, planned_to: str | None
+) -> tuple[str | None, str | None]:
+    """Empty the delivery window once the parcel is at its destination or done."""
+    if status in _NO_WINDOW_STATUSES:
+        return None, None
+    return planned_from, planned_to
+
+
+def is_pickup(
+    route_flag: bool | None,
+    status: ParcelStatus,
+    event_statuses: Iterable[ParcelStatus | None] = (),
+) -> bool:
+    """Whether the delivery route ends at a pickup point.
+
+    The carrier's own route flag wins; otherwise the parcel having reached
+    ``AT_PICKUP_POINT`` at any point counts, so the value survives collection.
+    """
+    if route_flag:
+        return True
+    return status is ParcelStatus.AT_PICKUP_POINT or any(
+        event is ParcelStatus.AT_PICKUP_POINT for event in event_statuses
+    )
+
+
 def _normalize_fleet_parcel(
     raw: dict[str, Any], *, market: str, include_history: bool
 ) -> dict:
@@ -542,6 +664,9 @@ def _normalize_fleet_parcel(
         for event, mapped in zip(events, statuses, strict=True)
     ][-HISTORY_MAX_EVENTS:]
 
+    # The fleet feed carries no delivery estimate.
+    planned_from = planned_to = None
+
     barcode = raw.get("sls_tracking_number") or requested_code
     data = {key: value for key, value in raw.items() if key != REQUESTED_CODE_KEY}
     return {
@@ -557,9 +682,9 @@ def _normalize_fleet_parcel(
             if delivered
             else None
         ),
-        "planned_from": None,
-        "planned_to": None,
-        "pickup": status is ParcelStatus.AT_PICKUP_POINT,
+        "planned_from": planned_from,
+        "planned_to": planned_to,
+        "pickup": is_pickup(None, status, statuses),
         "pickup_point": None,
         "url": _tracking_url(market, barcode),
         "weight": None,
@@ -572,7 +697,7 @@ def _normalize_fleet_parcel(
 def normalize_parcel(
     raw: dict[str, Any], *, market: str, include_history: bool = False
 ) -> dict:
-    """Return a carrier-agnostic parcel dict with the payload under ``raw``.
+    """Return a carrier-agnostic parcel dict with the full payload under ``raw``.
 
     ``raw`` is the API response's ``data`` object, with
     :data:`REQUESTED_CODE_KEY` set by the coordinator to the tracking code the
@@ -580,8 +705,7 @@ def normalize_parcel(
     every other block is read with ``.get()`` and a default, in every market,
     regardless of which one this hub is bound to — the block set does not
     split cleanly along market lines (it depends on which identifier
-    namespace the lookup resolved against instead). ``base_info`` (surfaced as
-    ``raw["order_type"]``/``raw["product_id"]``) and the top-level
+    namespace the lookup resolved against instead). ``base_info`` and the top-level
     ``has_epod`` boolean are the newest members of that optional set — first
     seen in production, never in the six original captures, so both are
     carried through unbranched rather than assigned any inferred meaning.
@@ -591,11 +715,8 @@ def normalize_parcel(
             raw, market=market, include_history=include_history
         )
     order_info = raw.get("order_info") or {}
-    parcel_info = raw.get("parcel_info") or {}
     sls_tracking_info = raw.get("sls_tracking_info") or {}
     edd_info = raw.get("edd_info") or {}
-    fulfillment_info = raw.get("fulfillment_info") or {}
-    base_info = raw.get("base_info") or {}
     requested_code = raw.get(REQUESTED_CODE_KEY)
 
     records = sls_tracking_info.get("records") or []
@@ -609,17 +730,26 @@ def normalize_parcel(
     _check_group_names(order_info)
 
     status = map_parcel_status(newest)
-    delivered = newest.get("milestone_code") == 8
+    delivered = status is ParcelStatus.DELIVERED
     _check_delivered_cross_check(delivered, order_info)
 
     spx_tn = order_info.get("spx_tn") or None
     barcode = spx_tn or requested_code
     resolved_number, resolved_is_internal = resolve_display_number(raw)
 
-    planned_from = planned_to = None
-    if not delivered and edd_info:
-        planned_from = _epoch_seconds_to_iso(edd_info.get("edd_min"), field="edd_min")
-        planned_to = _epoch_seconds_to_iso(edd_info.get("edd_max"), field="edd_max")
+    planned_from, planned_to = planned_for_status(
+        status,
+        *planned_window(
+            _epoch_seconds_to_iso(edd_info.get("edd_min"), field="edd_min"),
+            _epoch_seconds_to_iso(edd_info.get("edd_max"), field="edd_max"),
+            zone=_market_zone(market),
+        ),
+    )
+    pickup = is_pickup(
+        None,
+        status,
+        (map_parcel_status(record) for record in records if isinstance(record, dict)),
+    )
 
     receiver = sls_tracking_info.get("receiver_name") or None
 
@@ -638,34 +768,14 @@ def normalize_parcel(
         ),
         "planned_from": planned_from,
         "planned_to": planned_to,
-        "pickup": status is ParcelStatus.AT_PICKUP_POINT,
+        "pickup": pickup,
         "pickup_point": None,
         "url": _tracking_url(market, barcode),
         "weight": None,
         "dimensions": None,
         "history": build_history(records) if include_history else None,
         "raw": {
-            "tracking_code_group_name": order_info.get("tracking_code_group_name"),
-            "tracking_code_subgroup_name": order_info.get(
-                "tracking_code_subgroup_name"
-            ),
-            "milestone_code": newest.get("milestone_code"),
-            "issue_type": newest.get("issue_type"),
-            "reason_code": newest.get("reason_code"),
-            "standard_reason_code": newest.get("standard_reason_code"),
-            "standard_reason_description": newest.get("standard_reason_description"),
-            "is_instant_order": raw.get("is_instant_order"),
-            "is_shopee_market_order": raw.get("is_shopee_market_order"),
-            "order_max_update_limit": order_info.get("order_max_update_limit"),
-            "order_type": base_info.get("order_type"),
-            "product_id": base_info.get("product_id"),
-            "has_epod": raw.get("has_epod"),
-            "fulfillment_info_deliver_type": fulfillment_info.get("deliver_type"),
-            "current_location": newest.get("current_location"),
-            "next_location": newest.get("next_location"),
-            "customer_tracking_no": parcel_info.get("customer_tracking_no") or None,
-            "sls_tn": sls_tracking_info.get("sls_tn") or None,
-            "spx_tn": spx_tn,
+            **{k: v for k, v in raw.items() if k != REQUESTED_CODE_KEY},
             "resolved_number": resolved_number,
             "resolved_number_is_internal": resolved_is_internal,
             "market": market,

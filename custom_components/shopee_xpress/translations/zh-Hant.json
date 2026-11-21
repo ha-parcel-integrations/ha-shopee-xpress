@@ -143,6 +143,10 @@
       "next_delivery": {
         "name": "下一次配送"
       },
+      "en_route_to_pickup_point": {
+        "name": "前往取件點途中",
+        "unit_of_measurement": "件"
+      },
       "awaiting_pickup": {
         "name": "待取件",
         "unit_of_measurement": "件"

@@ -34,8 +34,15 @@ async def test_diagnostics_redacts_and_counts(hass):
     assert result["entry_options"]["market"] == "MY"
     # ...and every tracking-number identifier is redacted in the payload
     assert result["incoming"][0]["barcode"] == "**REDACTED**"
-    assert result["incoming"][0]["raw"]["spx_tn"] == "**REDACTED**"
-    assert result["incoming"][0]["raw"]["sls_tn"] == "**REDACTED**"
+    raw = result["incoming"][0]["raw"]
+    assert raw["order_info"]["spx_tn"] == "**REDACTED**"
+    assert raw["sls_tracking_info"]["sls_tn"] == "**REDACTED**"
+    assert raw["sls_tracking_info"]["receiver_name"] in (None, "", "**REDACTED**")
+    assert all(
+        record["description"] in ("", None, "**REDACTED**")
+        for record in raw["sls_tracking_info"]["records"]
+        if "description" in record
+    )
     assert result["incoming"][0]["raw"]["resolved_number"] == "**REDACTED**"
     # non-identifying fields survive, or the diagnostics would be useless
     assert result["incoming"][0]["status"] == "delivered"
@@ -65,10 +72,8 @@ async def test_diagnostics_redacts_raw_status_which_can_embed_a_name(hass):
         if event["raw_status"] is not None:
             assert event["raw_status"] == "**REDACTED**"
     # the underlying raw exception description field is redacted too
-    assert result["delivered"][0]["raw"]["standard_reason_description"] in (
-        None,
-        "**REDACTED**",
-    )
+    for record in result["delivered"][0]["raw"]["sls_tracking_info"]["records"]:
+        assert record.get("standard_reason_description") in (None, "**REDACTED**")
 
 
 async def test_diagnostics_redacts_product_id_but_not_order_type_or_has_epod(hass):
@@ -88,8 +93,9 @@ async def test_diagnostics_redacts_product_id_but_not_order_type_or_has_epod(has
 
     result = await async_get_config_entry_diagnostics(hass, entry)
 
-    assert result["incoming"][0]["raw"]["product_id"] == "**REDACTED**"
-    assert result["incoming"][0]["raw"]["order_type"] == 1
+    base_info = result["incoming"][0]["raw"]["base_info"]
+    assert base_info["product_id"] == "**REDACTED**"
+    assert base_info["order_type"] == 1
     assert result["incoming"][0]["raw"]["has_epod"] is True
 
 

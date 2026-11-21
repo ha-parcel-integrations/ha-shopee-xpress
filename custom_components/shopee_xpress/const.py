@@ -57,6 +57,12 @@ CAPABILITIES_BY_VARIANT = {
     "Vietnam": frozenset({"delivery_window", "history", "url"}),
 }
 
+# Taiwan's pickup-store name has not been seen in a reply yet, so pickup_point
+# is awaiting data there; it stays None until a real parcel shows one.
+PENDING_CAPABILITIES_BY_VARIANT = {
+    "Taiwan": frozenset({"pickup_point"}),
+}
+
 # One JSON GET, no auth, keyed on a query parameter that resolves against
 # several identifier namespaces at once (see MARKETS and the tracking-code
 # validation in config_flow.py). {host}/{language_code} come from MARKETS.

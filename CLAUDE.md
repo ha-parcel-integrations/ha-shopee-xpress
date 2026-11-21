@@ -49,8 +49,7 @@ for an unknown code. `ShopeeXpressApiError` is raised for every non-success
 response uniformly, because this carrier's failure envelope can't distinguish
 "not found" from "backend broken" — there is nothing in the response shape to
 branch on, so every non-success becomes the same generic error rather than a
-richer, differentiated one. `carrier-research/shopee-xpress/shopee-xpress.md`
-records `rate_limit: unknown`, so there's no evidence a 429 path is even
+richer, differentiated one. The rate limit is unknown, so there's no evidence a 429 path is even
 needed; revisit if that changes.
 
 **Taiwan runs on a second transport, the fleet feed — never on
@@ -72,16 +71,31 @@ back to the newest mapped scan and warns once. `receiver` is the feed's
 `TO_REDACT`. The same feed exists in Brazil and the Philippines with the same
 shape; it is not used there (yet) — `get_order_info` answers those.
 
-**`awaiting_pickup` comes from Taiwan only.** `SP_Ready_Collection` (waiting at
-the buyer's pickup store) maps to `at_pickup_point`, so the sensor exists for
-every hub. `pickup_point` stays `None`: the store's name has not been seen in
-a reply. The order-lookup markets never reach `at_pickup_point`.
+**Pickup sensors: `awaiting_pickup` and `en_route_to_pickup_point` exist for
+every hub.** Only Taiwan's fleet feed has shown a pickup state
+(`SP_Ready_Collection`, waiting at the buyer's pickup store, maps to
+`at_pickup_point`); the order-lookup markets never reached it, so for them both
+sensors read 0 until a parcel shows one. `pickup` is `is_pickup(None, status,
+statuses)`: no structured route field has been seen, so it is true once any
+scan or record mapped to `at_pickup_point`, and stays true after collection.
+`pickup_point` stays `None` (`PENDING_CAPABILITIES_BY_VARIANT`, Taiwan): the
+store's name has not been seen in a reply.
+
+**Delivered and the return leg.** `delivered` is `status is DELIVERED`.
+`milestone_code` 10 covers the whole return leg, so `returning` is never
+`delivered`. The contract allows `delivered` for a return that is back at the
+sender only on an explicit signal; the code `F999` is believed to mean that
+but no returned parcel has confirmed it, so it is not used.
+
+**Delivery window.** `edd_info` epoch seconds go through `planned_window` in
+the market's own time zone (Home Assistant's for Indonesia and Brazil, which
+span several), so a single moment ends at `23:59:59` that day; the window is emptied at
+`at_pickup_point`, `returning` and `delivered`.
 
 **Status: manually verified against real parcels, and the test suite is
 written and green.** The payload mapping was built from maintainer-supplied
-captures plus one live re-probe made from the research repo, then confirmed
-against real parcels through this integration itself — see
-`carrier-research/shopee-xpress/api/`. `tests/payloads.py` reproduces the six
+captures plus one live re-probe, then confirmed
+against real parcels through this integration itself. `tests/payloads.py` reproduces the six
 real (redacted) captures faithfully — same tracking-code shapes, same
 milestone/tracking codes, same record counts and duplicate-code positions
 (`F004` ×3 in the Brazilian fixture, `F440`/sorting-centre pairs in Malaysia
@@ -221,7 +235,7 @@ a user to report, and prompting "open an issue" for something that isn't
 actionable just trains people to ignore the prompts that *are*. Removed
 outright, function and call site both — not folded into a rate limit or a
 debug-level log, gone. If block-set questions need revisiting later, the
-per-market pattern table in `tracking.md` is still the place to look, not a
+per-market pattern table is still the place to look, not a
 runtime warning.
 
 **`base_info` and top-level `has_epod` are two more optional keys, first seen
@@ -232,8 +246,7 @@ the missing-blocks case above — a functional non-gap, removed outright — the
 are keys arriving for the *first* time, so the call was not to reflexively
 silence the warning but to map them through: `base_info` joined
 `OPTIONAL_DATA_BLOCKS`/`has_epod` joined `KNOWN_DATA_KEYS` in `const.py`, and
-`normalize_parcel()` now surfaces `raw["order_type"]`, `raw["product_id"]` and
-`raw["has_epod"]` unbranched — same "carry it in raw, do not derive anything
+`raw` (the full `data` object) carries `base_info` and `has_epod` unbranched — same "carry it in raw, do not derive anything
 from it" treatment already given to `order_max_update_limit`, since a single
 sighting with no value shown in the log line isn't enough to pin down either
 field's real vocabulary. `has_epod` is plausibly "does this parcel have an
@@ -258,7 +271,7 @@ path (a bogus code and a nonexistent path both `200` with an identical SPA
 shell), not that the content is correct for a given code. `CAPABILITIES`
 gained `url` in the same change (1.1.0).
 
-**API mechanics live in `carrier-research/shopee-xpress/api/`, NOT here and
+**API mechanics live outside this repo, NOT here and
 not in a local `docs/api/`** — the endpoint, the `MARKETS` host/language
 table, the `milestone_code`/reason-code vocabularies and their `ParcelStatus`
 mapping, and the full annotated captures. See CONVENTIONS.md.
@@ -303,6 +316,4 @@ Coverage must stay **above 95%** (silver `test-coverage` rule). Run
 `--cov=custom_components.shopee_xpress` to see the current number and test
 count — not repeated here since both drift with every release. Run before
 committing. A code change updates the README +
-this file + `docs/` in the same commit; the API reference lives in this
-carrier's own directory under the private `carrier-research/shopee-xpress/api/`,
-never in this repo.
+this file + `docs/` in the same commit; the API reference never lives in this repo.

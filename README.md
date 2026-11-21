@@ -156,11 +156,12 @@ Standard HA removal applies: **Settings → Devices & Services → Shopee Xpress
 | `sensor.shopee_xpress_incoming_parcels` | Number of active tracked parcels, full list under the `parcels` attribute |
 | `sensor.shopee_xpress_parcel_<code>` | One per tracked parcel; state is the canonical status, attributes carry the full normalised parcel |
 | `sensor.shopee_xpress_next_delivery` | Earliest expected delivery moment across all active parcels |
+| `sensor.shopee_xpress_en_route_to_pickup_point` | Active parcels heading for a pickup store, not yet there (reads 0 until a market reports one) |
 | `sensor.shopee_xpress_awaiting_pickup` | Parcels waiting at a pickup store (Taiwan) |
 | `sensor.shopee_xpress_delivered_parcels` | Recently delivered parcels (see the retention option) |
 | `sensor.shopee_xpress_last_successful_update` | Diagnostic: when Shopee Xpress was last polled successfully |
 
-A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight`, `dimensions` and `pickup_point` are not part of this carrier's payload in any market, so those attributes are always empty — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand; never Taiwan), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
+A delivered parcel moves from its per-parcel sensor to the delivered sensor automatically. `weight` and `dimensions` are not part of this carrier's payload in any market, so those attributes are always empty (`pickup_point` is empty too: the store's name has not been seen yet) — the expected delivery window is only present in some markets (Malaysia, Philippines, Thailand; never Taiwan), and disappears once a parcel is delivered. `url` links to the consumer tracking page for the parcel's own market host, built from the tracking code rather than read from the API (which doesn't return one).
 
 A **`button.shopee_xpress_refresh`** entity triggers an immediate poll outside
 the [dynamic polling](#dynamic-polling) cadence, and a

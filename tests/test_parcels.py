@@ -3,8 +3,7 @@
 These need no Home Assistant instance — the whole point of keeping
 ``parcels.py`` free of I/O is that the carrier-specific mapping can be tested
 as plain functions. Fixtures come from ``payloads.py``, itself a faithful
-(redacted) reproduction of the six real captures documented in
-``carrier-research/api/shopee-xpress/tracking.md``.
+(redacted) reproduction of the six real captures.
 """
 
 from datetime import UTC, datetime, timedelta
@@ -22,6 +21,7 @@ from custom_components.shopee_xpress.const import (
     DOMAIN,
     HISTORY_MAX_EVENTS,
     KNOWN_CAPABILITIES,
+    PENDING_CAPABILITIES_BY_VARIANT,
     ParcelStatus,
 )
 from custom_components.shopee_xpress.parcels import (
@@ -471,8 +471,7 @@ def test_normalize_surfaces_base_info_and_has_epod_in_raw():
     raw["base_info"] = {"order_type": 1, "product_id": 123456}
     raw["has_epod"] = True
     parcel = normalize_parcel(_stamped(raw, MY_CODE), market="MY")
-    assert parcel["raw"]["order_type"] == 1
-    assert parcel["raw"]["product_id"] == 123456
+    assert parcel["raw"]["base_info"] == {"order_type": 1, "product_id": 123456}
     assert parcel["raw"]["has_epod"] is True
 
 
@@ -480,9 +479,8 @@ def test_normalize_base_info_and_has_epod_absent_is_none():
     """Absent on every one of the six original captures — must default to
     None, not raise, same as every other optional block."""
     parcel = normalize_parcel(_stamped(my_data(), MY_CODE), market="MY")
-    assert parcel["raw"]["order_type"] is None
-    assert parcel["raw"]["product_id"] is None
-    assert parcel["raw"]["has_epod"] is None
+    assert "base_info" not in parcel["raw"]
+    assert "has_epod" not in parcel["raw"]
 
 
 # --- Thailand: sentinel exception values must not warn ---------------------
@@ -522,10 +520,10 @@ def test_normalize_brazil_survives_missing_order_and_parcel_and_edd_info():
     assert parcel["delivered"] is True
     assert parcel["planned_from"] is None
     assert parcel["planned_to"] is None
-    assert parcel["raw"]["spx_tn"] is None  # order_info absent -> no spx_tn at all
+    assert "order_info" not in parcel["raw"]  # absent -> no spx_tn at all
     assert parcel["raw"]["resolved_number"] == BR_CODE
     assert parcel["raw"]["resolved_number_is_internal"] is True
-    assert parcel["raw"]["fulfillment_info_deliver_type"] == 1
+    assert parcel["raw"]["fulfillment_info"]["deliver_type"] == 1
     assert parcel["raw"]["is_shopee_market_order"] is True
 
 
@@ -637,8 +635,8 @@ def test_normalize_vietnam_known_exception_vocab_does_not_warn(caplog):
 
 def test_normalize_vietnam_group_subgroup_differ():
     parcel = normalize_parcel(_stamped(vn_data(), VN_CODE), market="VN")
-    assert parcel["raw"]["tracking_code_group_name"] == "Return"
-    assert parcel["raw"]["tracking_code_subgroup_name"] == "Returned"
+    assert parcel["raw"]["order_info"]["tracking_code_group_name"] == "Return"
+    assert parcel["raw"]["order_info"]["tracking_code_subgroup_name"] == "Returned"
 
 
 def test_normalize_vietnam_missing_edd_info_logs_nothing(caplog):
@@ -956,3 +954,9 @@ def test_fleet_scan_without_a_numeric_timestamp_sorts_first():
     )
     parcel = normalize_parcel(_stamped(data, TW_CODE), market="TW")
     assert parcel["status"] is ParcelStatus.DELIVERED
+
+
+def test_pending_capabilities_are_known_and_not_also_confirmed():
+    for variant, fields in PENDING_CAPABILITIES_BY_VARIANT.items():
+        assert fields <= KNOWN_CAPABILITIES
+        assert not fields & CAPABILITIES_BY_VARIANT[variant]
