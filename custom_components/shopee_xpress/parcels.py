@@ -542,18 +542,17 @@ def _end_of_day(moment: datetime, zone: tzinfo) -> datetime:
 # Single-zone markets only; Indonesia and Brazil span several zones and use
 # Home Assistant's zone, like an unknown market.
 _MARKET_ZONES = {
-    "MY": "Asia/Kuala_Lumpur",
-    "PH": "Asia/Manila",
-    "TH": "Asia/Bangkok",
-    "VN": "Asia/Ho_Chi_Minh",
-    "SG": "Asia/Singapore",
-    "TW": "Asia/Taipei",
+    "MY": ZoneInfo("Asia/Kuala_Lumpur"),
+    "PH": ZoneInfo("Asia/Manila"),
+    "TH": ZoneInfo("Asia/Bangkok"),
+    "VN": ZoneInfo("Asia/Ho_Chi_Minh"),
+    "SG": ZoneInfo("Asia/Singapore"),
+    "TW": ZoneInfo("Asia/Taipei"),
 }
 
 
 def _market_zone(market: str) -> tzinfo:
-    name = _MARKET_ZONES.get(market)
-    return ZoneInfo(name) if name else dt_util.get_default_time_zone()
+    return _MARKET_ZONES.get(market) or dt_util.get_default_time_zone()
 
 
 def planned_window(
