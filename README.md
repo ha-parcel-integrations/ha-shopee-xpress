@@ -46,6 +46,7 @@ A custom Home Assistant integration that tracks your Shopee Xpress (SPX) parcels
 - Summary sensors: incoming parcels, next delivery, recently delivered parcels
 - Read-only **Deliveries** calendar with the expected delivery windows
 - `shopee_xpress.track_parcel` / `shopee_xpress.untrack_parcel` services, so a dashboard button can add a parcel
+- A `contents` field on every parcel, set in your own words with the `shopee_xpress.update_contents` service
 - Events + device triggers for no-code automations (parcel registered, status changed, delivered, delivery time changed)
 - Opt-in per-parcel status history
 - Manual refresh button and a diagnostic last-update sensor
@@ -207,8 +208,11 @@ Every payload is the full normalised parcel plus the hub's `device_id`. Events a
 
 | Service | Fields | Description |
 |---|---|---|
-| `shopee_xpress.track_parcel` | `tracking_code`, `market` (optional) | Start tracking a parcel. `market` picks the hub when more than one is set up. |
+| `shopee_xpress.track_parcel` | `tracking_code`, `market` (optional), `contents` (optional) | Start tracking a parcel, optionally noting what is in it. `market` picks the hub when more than one is set up. |
 | `shopee_xpress.untrack_parcel` | `tracking_code` | Stop tracking a parcel |
+| `shopee_xpress.update_contents` | `tracking_code`, `contents`, `config_entry_id` (optional) | Set what is in a parcel, tracked or not; an empty `contents` clears it. It goes to every hub that lists the code; name one with `config_entry_id` (needed for a code no hub lists yet). |
+
+The `contents` text you set titles the parcel's calendar event and shows on the next-delivery sensor.
 
 ## Examples
 

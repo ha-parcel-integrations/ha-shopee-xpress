@@ -102,6 +102,10 @@
         "market": {
           "name": "Pasar",
           "description": "Hub pasar mana yang akan ditambahkan. Hanya diperlukan jika lebih dari satu hub telah disiapkan."
+        },
+        "contents": {
+          "name": "Isi",
+          "description": "Isi paket, dengan kata-katamu sendiri. Memanggil ulang untuk paket yang dilacak akan menggantikan isinya; teks kosong menghapusnya."
         }
       }
     },
@@ -112,6 +116,24 @@
         "tracking_code": {
           "name": "Kode resi",
           "description": "Kode resi Shopee Xpress yang akan berhenti dilacak."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Perbarui isi paket",
+      "description": "Atur isi paket untuk sebuah kode pelacakan, dengan kata-katamu sendiri. Teks kosong menghapus isinya.",
+      "fields": {
+        "tracking_code": {
+          "name": "Kode resi",
+          "description": "Kode resi Shopee Xpress."
+        },
+        "contents": {
+          "name": "Isi",
+          "description": "Isi paket, dengan kata-katamu sendiri. Teks kosong menghapusnya."
+        },
+        "config_entry_id": {
+          "name": "Akun",
+          "description": "Akun tempat nilai ini disimpan. Diperlukan saat belum ada akun yang mengenal kode ini."
         }
       }
     }
@@ -161,6 +183,11 @@
       "parcel": {
         "name": "Paket {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Tidak ada akun yang mengenal kode ini. Pilih akun untuk menyimpannya."
     }
   }
 }

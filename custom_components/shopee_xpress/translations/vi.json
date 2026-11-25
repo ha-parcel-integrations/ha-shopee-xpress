@@ -102,6 +102,10 @@
         "market": {
           "name": "Thị trường",
           "description": "Thêm vào hub của thị trường nào. Chỉ cần thiết khi có nhiều hơn một hub được thiết lập."
+        },
+        "contents": {
+          "name": "Nội dung",
+          "description": "Những gì có trong bưu kiện, bằng lời của bạn. Gọi lại cho một bưu kiện đang theo dõi sẽ thay thế nội dung; văn bản trống sẽ xóa nội dung."
         }
       }
     },
@@ -112,6 +116,24 @@
         "tracking_code": {
           "name": "Mã vận đơn",
           "description": "Mã vận đơn Shopee Xpress cần ngừng theo dõi."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Cập nhật nội dung bưu kiện",
+      "description": "Đặt nội dung của một bưu kiện theo mã theo dõi, bằng lời của bạn. Văn bản trống sẽ xóa nội dung.",
+      "fields": {
+        "tracking_code": {
+          "name": "Mã vận đơn",
+          "description": "Mã vận đơn Shopee Xpress."
+        },
+        "contents": {
+          "name": "Nội dung",
+          "description": "Những gì có trong bưu kiện, bằng lời của bạn. Văn bản trống sẽ xóa nội dung."
+        },
+        "config_entry_id": {
+          "name": "Tài khoản",
+          "description": "Tài khoản cần lưu giá trị này. Cần khi chưa có tài khoản nào biết mã này."
         }
       }
     }
@@ -161,6 +183,11 @@
       "parcel": {
         "name": "Kiện hàng {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Không tài khoản nào biết mã này. Hãy chọn tài khoản để lưu."
     }
   }
 }

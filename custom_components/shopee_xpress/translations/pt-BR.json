@@ -102,6 +102,10 @@
         "market": {
           "name": "Mercado",
           "description": "A qual hub de mercado adicioná-lo. Necessário apenas quando há mais de um hub configurado."
+        },
+        "contents": {
+          "name": "Conteúdo",
+          "description": "O que há no pacote, com suas próprias palavras. Chamar novamente para um pacote acompanhado substitui o conteúdo; um texto vazio o apaga."
         }
       }
     },
@@ -112,6 +116,24 @@
         "tracking_code": {
           "name": "Código de rastreio",
           "description": "O código de rastreio do Shopee Xpress para parar de rastrear."
+        }
+      }
+    },
+    "update_contents": {
+      "name": "Atualizar o conteúdo do pacote",
+      "description": "Defina o que há em um pacote, com suas próprias palavras, para um código de rastreamento. Um texto vazio apaga o conteúdo.",
+      "fields": {
+        "tracking_code": {
+          "name": "Código de rastreio",
+          "description": "O código de rastreio do Shopee Xpress."
+        },
+        "contents": {
+          "name": "Conteúdo",
+          "description": "O que há no pacote, com suas próprias palavras. Um texto vazio o apaga."
+        },
+        "config_entry_id": {
+          "name": "Conta",
+          "description": "A conta para a qual salvar isto. Necessária quando nenhuma conta conhece o código ainda."
         }
       }
     }
@@ -161,6 +183,11 @@
       "parcel": {
         "name": "Pacote {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "Nenhuma conta conhece este código. Escolha a conta para a qual salvá-lo."
     }
   }
 }

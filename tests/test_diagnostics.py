@@ -134,3 +134,17 @@ async def test_diagnostics_redacts_the_fleet_feeds_recipient_and_phone(hass):
     assert result["incoming"][0]["raw"]["recipient_name"] == "**REDACTED**"
     assert result["incoming"][0]["raw"]["phone"] == "**REDACTED**"
     assert result["incoming"][0]["receiver"] == "**REDACTED**"
+
+
+async def test_diagnostics_redacts_contents(hass):
+    entry = MagicMock()
+    entry.options = {"parcels": [], "market": "MY"}
+    parcel = normalize_parcel({**my_data(), REQUESTED_CODE_KEY: MY_CODE}, market="MY")
+    parcel["contents"] = "Running shoes"
+    entry.runtime_data.coordinator.data = [parcel]
+    entry.runtime_data.coordinator.delivered = []
+    entry.runtime_data.coordinator.delivered_codes = set()
+
+    result = await async_get_config_entry_diagnostics(hass, entry)
+
+    assert result["incoming"][0]["contents"] == "**REDACTED**"

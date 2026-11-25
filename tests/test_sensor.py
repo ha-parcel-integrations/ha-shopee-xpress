@@ -126,6 +126,13 @@ def test_awaiting_pickup_counts_only_at_pickup_point_status():
     assert sensor.unique_id == "e1_awaiting_pickup"
 
 
+def test_next_delivery_carries_the_contents():
+    parcel = _parcel("A", planned_from="2099-05-01T10:00:00Z")
+    parcel["contents"] = "Running shoes"
+    sensor = ShopeeXpressNextDeliverySensor(_coordinator([parcel]), _entry())
+    assert sensor.extra_state_attributes["contents"] == "Running shoes"
+
+
 def test_next_delivery_skips_a_window_that_has_ended():
     coordinator = _coordinator(
         [

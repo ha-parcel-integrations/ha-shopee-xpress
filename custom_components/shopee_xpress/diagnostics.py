@@ -32,6 +32,7 @@ TO_REDACT = {
     "barcode",
     "sender",
     "receiver",
+    "contents",
     "raw_status",
     REQUESTED_CODE_KEY,
     # the user's own registered code, as stored in entry.options[parcels] —

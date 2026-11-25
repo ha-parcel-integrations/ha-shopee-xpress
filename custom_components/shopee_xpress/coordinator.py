@@ -12,7 +12,7 @@ import logging
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from homeassistant.util import dt as dt_util
@@ -33,6 +33,7 @@ from .const import (
     STAGGER_MINUTES,
     ParcelStatus,
 )
+from .contents import ContentsStore
 from .parcels import (
     REQUESTED_CODE_KEY,
     apply_delivered_filter,
@@ -149,7 +150,11 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
             update_interval=timedelta(minutes=HOT_INTERVAL_MINUTES),
         )
         self._client = client
+        self.contents_store = ContentsStore(hass, entry.entry_id)
         self.delivered: list[dict] = []
+        # Barcode -> the code the parcel was requested with: the contents store
+        # is keyed on the latter, and a response may carry another number.
+        self._requested_codes: dict[str, str] = {}
         # tracking_code -> last successful raw payload, so a transient fetch
         # failure keeps the parcel visible instead of dropping its sensor.
         # There is no "not found" placeholder here (unlike most carriers in
@@ -181,6 +186,27 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
         # diagnostics; ``None`` before the first refresh and whenever polling
         # is fully suspended (nothing tracked, or everything delivered).
         self._current_tier_minutes: int | None = None
+
+    def _apply_contents(self, parcel: dict, code: object) -> dict:
+        """Put the user's own contents text over the carrier's, when there is one."""
+        user_value = self.contents_store.get(code)
+        if user_value is not None:
+            parcel["contents"] = user_value
+        return parcel
+
+    @callback
+    def async_reapply_contents(self) -> None:
+        """Re-read the contents store into the published parcels, without a poll."""
+        for parcel in [*(self.data or []), *self.delivered]:
+            barcode = parcel.get("barcode") or ""
+            parcel["contents"] = None
+            self._apply_contents(parcel, self._requested_codes.get(barcode, barcode))
+        self.async_update_listeners()
+
+    @property
+    def known_codes(self) -> set[str]:
+        """Tracking codes this entry follows."""
+        return set(self._tracked())
 
     @property
     def current_tier_minutes(self) -> int | None:
@@ -295,10 +321,18 @@ class ShopeeXpressCoordinator(DataUpdateCoordinator[list[dict]]):
         entries = [
             (
                 code,
-                normalize_parcel(raw, market=market, include_history=include_history),
+                self._apply_contents(
+                    normalize_parcel(
+                        raw, market=market, include_history=include_history
+                    ),
+                    code,
+                ),
             )
             for code, raw in raws_by_code.items()
         ]
+        self._requested_codes = {
+            parcel["barcode"]: code for code, parcel in entries if parcel.get("barcode")
+        }
         active = [parcel for _, parcel in entries if not parcel["delivered"]]
         delivered = [parcel for _, parcel in entries if parcel["delivered"]]
         # Rebuilt fresh from this cycle's data — a code whose payload just

@@ -102,6 +102,10 @@
         "market": {
           "name": "市場",
           "description": "要加入哪個市場的中心。僅在設定了多個中心時需要。"
+        },
+        "contents": {
+          "name": "內容物",
+          "description": "包裹裡有什麼，用你自己的話描述。對已追蹤的包裹再次呼叫會取代內容；留空則會清除。"
         }
       }
     },
@@ -112,6 +116,24 @@
         "tracking_code": {
           "name": "物流追蹤編號",
           "description": "要停止追蹤的 Shopee Xpress 物流追蹤編號。"
+        }
+      }
+    },
+    "update_contents": {
+      "name": "更新包裹內容",
+      "description": "依追蹤編號，用你自己的話設定包裹裡有什麼。留空則會清除內容。",
+      "fields": {
+        "tracking_code": {
+          "name": "物流追蹤編號",
+          "description": "Shopee Xpress 物流追蹤編號。"
+        },
+        "contents": {
+          "name": "內容物",
+          "description": "包裹裡有什麼，用你自己的話描述。留空則會清除。"
+        },
+        "config_entry_id": {
+          "name": "帳號",
+          "description": "要為其儲存此內容的帳號。當尚無帳號識別此追蹤碼時必填。"
         }
       }
     }
@@ -161,6 +183,11 @@
       "parcel": {
         "name": "包裹 {barcode}"
       }
+    }
+  },
+  "exceptions": {
+    "update_contents_entry_required": {
+      "message": "沒有任何帳號識別此追蹤碼。請選擇要儲存的帳號。"
     }
   }
 }

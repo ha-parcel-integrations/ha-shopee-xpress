@@ -37,6 +37,7 @@ from custom_components.shopee_xpress.coordinator import (
     _next_update_interval,
     _stagger_minutes,
 )
+from custom_components.shopee_xpress.parcels import normalize_parcel
 
 from .payloads import ID_CODE, MY_CODE, br_data, id_data, my_data, vn_data
 
@@ -736,3 +737,71 @@ async def test_a_parcel_the_delivered_list_leaves_out_still_fires_delivered(hass
 
     assert sorted(e.data["barcode"] for e in delivered) == sorted([first, second])
     assert len(coordinator.delivered) == 1
+
+
+# ---------------------------------------------------------------------------
+# contents overlay
+# ---------------------------------------------------------------------------
+
+
+def _carrier_text(raw: dict, **kwargs) -> dict:
+    parcel = normalize_parcel(raw, **kwargs)
+    parcel["contents"] = "Carrier text"
+    return parcel
+
+
+async def test_user_contents_overlays_the_carrier_value(hass):
+    entry = _entry_with([{CONF_TRACKING_CODE: ID_CODE}], market="ID")
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.return_value = id_data()
+    coordinator = ShopeeXpressCoordinator(hass, client, entry)
+
+    with patch(
+        "custom_components.shopee_xpress.coordinator.normalize_parcel",
+        side_effect=_carrier_text,
+    ):
+        data = await coordinator._async_update_data()
+        assert data[0]["contents"] == "Carrier text"
+
+        coordinator.contents_store.async_set(ID_CODE, "Running shoes")
+        data = await coordinator._async_update_data()
+        assert data[0]["contents"] == "Running shoes"
+
+        coordinator.contents_store.async_set(ID_CODE, None)
+        data = await coordinator._async_update_data()
+        assert data[0]["contents"] == "Carrier text"
+
+
+async def test_user_contents_is_keyed_on_the_requested_code(hass):
+    """A response carrying another number still finds the value stored for the code."""
+    entry = _entry_with([{CONF_TRACKING_CODE: ID_CODE}], market="ID")
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.return_value = id_data("SPXID999999999999")
+    coordinator = ShopeeXpressCoordinator(hass, client, entry)
+    coordinator.contents_store.async_set(ID_CODE, "Running shoes")
+
+    data = await coordinator._async_update_data()
+
+    assert data[0]["barcode"] == "SPXID999999999999"
+    assert data[0]["contents"] == "Running shoes"
+
+    coordinator.data = data
+    coordinator.contents_store.async_set(ID_CODE, "Winter socks")
+    coordinator.async_reapply_contents()
+    assert coordinator.data[0]["contents"] == "Winter socks"
+
+
+async def test_user_contents_reaches_the_delivered_list(hass):
+    entry = _entry_with([{CONF_TRACKING_CODE: MY_CODE}])
+    entry.add_to_hass(hass)
+    client = AsyncMock()
+    client.async_get_parcel.return_value = my_data()
+    coordinator = ShopeeXpressCoordinator(hass, client, entry)
+    coordinator.contents_store.async_set(MY_CODE, "Running shoes")
+
+    await coordinator._async_update_data()
+
+    assert coordinator.delivered[0]["contents"] == "Running shoes"
+    assert coordinator.known_codes == {MY_CODE}
